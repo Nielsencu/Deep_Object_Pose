@@ -2,16 +2,18 @@ import random
 import subprocess
 
 
-# 20 000 images
 
-for i in range(0,40):
+num_loop = 5#40  # num_loop * nb_frames images
+
+
+for i in range(0,num_loop):
 	to_call = [
 		# "python",'single_video.py',
 		"python",'single_video_pybullet.py',
 		'--spp','10',
 		'--nb_frames', '200',
 		'--nb_objects',str(int(random.uniform(50,75))),
-		"--easy",
+		#"--easy",
 		'--static_camera',
 		# '--nb_frames', '1',
 		# '--nb_objects',str(1),

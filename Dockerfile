@@ -11,6 +11,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN mkdir -p /opt/ml/code \
     && mkdir -p /opt/ml/model
 
+RUN mkdir -p /workspace/dope
+
 # Install system and development components
 RUN apt-get update && apt-get -y --no-install-recommends install \
     apt-utils \
@@ -31,17 +33,21 @@ RUN apt-get update && apt-get -y --no-install-recommends install \
 
 # pip install required Python packages
 COPY requirements.txt ${HOME}
+COPY scripts/train2/requirements1.txt ${HOME}
 RUN python3 -m pip install --no-cache-dir -r ${HOME}/requirements.txt
-RUN python3 -m pip install --no-cache-dir sagemaker-training
+RUN python3 -m pip install --no-cache-dir -r ${HOME}/requirements1.txt
 
 # Copying local dataset
-COPY scripts/train1/ /opt/ml/input/data/channel1
+COPY scripts/nvisii_data_gen/output/dataset/ /opt/ml/input/data/channel1
 COPY scripts/hyperparameters.json /opt/ml/input/config/
 
-# Copy script for sagemaker to use
-COPY scripts/train.py /opt/ml/code/train.py
+COPY . /workspace/dope
 
-ENV PYTHONPATH "${PYTHONPATH}:/workspace/dope/src"
+# Copy script for sagemaker to use
+COPY scripts/train2/train.py /opt/ml/code/train.py  
+
+ENV PYTHONPATH "${PYTHONPATH}:/workspace/dope/scripts/train2"
+RUN echo $PYTHONPATH
 
 ENV DISPLAY :0
 ENV NVIDIA_VISIBLE_DEVICES all
@@ -54,4 +60,4 @@ ENV QT_X11_NO_MITSHM 1
 ENV SAGEMAKER_PROGRAM train.py
 
 # Specify train.py parameters
-ENTRYPOINT ["python3", "/opt/ml/code/train.py"]
+ENTRYPOINT ["python", "-m", "torch.distributed.launch", "/opt/ml/code/train.py"]

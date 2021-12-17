@@ -1066,12 +1066,16 @@ if __name__ == "__main__":
     hyperparameters_file = "/opt/ml/input/config/hyperparameters.json"
 
     # hyperparameters
-    with open(hyperparameters_file) as f:
-        hyperparameters = json.load(f)
-    gpus = hyperparameters["gpus"]
-    obj = hyperparameters["obj"]
-    # obj = 010_potted_meat_can_16k
-    gpuids = gpus.split(" ")
+    try:
+        with open(hyperparameters_file) as f:
+            hyperparameters = json.load(f)
+        gpus = hyperparameters["gpus"]
+        obj = hyperparameters["obj"]
+        gpuids = gpus.split(" ")
+    except:
+        gpuids = [0]
+        obj = ''
+    
     print(f"Using {gpuids} GPUs")
     print(f"Training {obj}")
 
@@ -1089,10 +1093,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('train', 
-        default = '',
-    )
-
-    parser.add_argument('serve', 
         default = '',
     )
 
@@ -1216,11 +1216,9 @@ if __name__ == "__main__":
     parser.add_argument("--option")
     opt = parser.parse_args(remaining_argv)
 
-    if opt.serve:
-        print("Serving")
-    elif opt.train:
+    if opt.train:
         print("Training ")
-        
+
     if opt.pretrained in ['false', 'False']:
         opt.pretrained = False
 

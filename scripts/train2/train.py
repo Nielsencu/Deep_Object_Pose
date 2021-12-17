@@ -35,19 +35,17 @@ import json
 
 from tensorboardX import SummaryWriter
 
-
 from PIL import Image
 from PIL import ImageDraw
 
 from models import *
 from utils_dope import *
 
-
 import warnings
 warnings.filterwarnings("ignore")
 
 
-os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3,4,5,6,7"
+#os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 torch.autograd.set_detect_anomaly(False)
 torch.autograd.profiler.profile(False)
@@ -64,11 +62,21 @@ torch.backends.cudnn.benchmark = True
 # _libcudart.cudaDeviceGetLimit(pValue, ctypes.c_int(0x05))
 # assert pValue.contents.value == 128
 
-
-
-
 # os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3"
 # os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
+data_dir = ["/opt/ml/input/data/channel1"]
+model_dir = "/opt/ml/model"
+hyperparameters_file = "/opt/ml/input/config/hyperparameters.json"
+
+# hyperparameters
+with open(hyperparameters_file) as f:
+   hyperparameters = json.load(f)
+gpus = hyperparameters["gpus"]
+obj = hyperparameters["obj"]
+gpuids = gpus.split(" ")
+print(f"Using {gpuids} GPUs")
+print(f"Training {obj}")
 
 print ("start:" , datetime.datetime.now().time())
 
@@ -83,7 +91,8 @@ conf_parser.add_argument("-c", "--config",
                         help="Specify config file", metavar="FILE")
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data', nargs='+', help='path to training data')
+parser.add_argument('train', default='train', help="train?")
+parser.add_argument('--data', nargs='+', default=data_dir, help='path to training data')
 parser.add_argument('--datatest', default="", help='path to data testing set')
 parser.add_argument('--testonly', action='store_true', help='only run inference') 
 parser.add_argument('--testbatchsize', default=1,type=int, help='size of the batchsize for testing')
@@ -103,7 +112,7 @@ parser.add_argument('--lr', type=float, default=0.0001, help='learning rate, def
 parser.add_argument('--noise', type=float, default=2.0, help='gaussian noise added to the image')
 parser.add_argument('--net', default='', help="path to net (to continue training)")
 parser.add_argument('--net_dope', default=None, help="path to pretrained dope_network")
-parser.add_argument('--network', default='dream_full', help="[dream_full,dope,mobile]")
+parser.add_argument('--network', default='dope', help="[dream_full,dope,mobile]")
 parser.add_argument('--namefile', default='epoch', help="name to put on the file of the save weightss")
 parser.add_argument('--manualseed', type=int, help='manual seed')
 parser.add_argument('--epochs', type=int, default=60)
@@ -112,7 +121,7 @@ parser.add_argument('--loginterval', type=int, default=100)
 parser.add_argument('--gpuids',nargs='+', type=int, default=[0], help='GPUs to use')
 parser.add_argument('--extensions',nargs='+', type=str, default=["png"], 
     help='Extensions to use, you can have multiple entries seperated by space, e.g., png jpeg. ')
-parser.add_argument('--outf', default='tmp', help='folder to output images and model checkpoints')
+parser.add_argument('--outf', default=model_dir, help='folder to output images and model checkpoints')
 parser.add_argument('--sigma', default=4, help='keypoint creation sigma')
 parser.add_argument('--keypoints', default=None, 
     help='list of keypoints to load from the json files.')
@@ -137,7 +146,7 @@ parser.add_argument('--data1', default=None, help='path to dataset1')
 parser.add_argument('--data2', default=None, help='path to dataset2')
 parser.add_argument('--size1', default=None, help='size of dataset1 in percentage (0,1)')
 parser.add_argument('--size2', default=None, help='size of dataset2 in percentage (0,1)')
-parser.add_argument("--local_rank", type=int)
+parser.add_argument("--local_rank", default=0, type=int)
 
 # Read the config but do not overwrite the args written 
 args, remaining_argv = conf_parser.parse_known_args()
@@ -242,7 +251,7 @@ if opt.local_rank == 0:
 
 random.seed(opt.manualseed)
 
-
+print(opt.local_rank)
 torch.cuda.set_device(opt.local_rank)
 torch.distributed.init_process_group(backend='NCCL',
                                      init_method='env://')

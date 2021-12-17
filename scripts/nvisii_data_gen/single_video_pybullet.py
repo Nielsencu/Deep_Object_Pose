@@ -18,6 +18,8 @@ from utils import *
 
 parser = argparse.ArgumentParser()
 
+data_gen_root = "/workspace/dope/scripts/nvisii_data_gen"
+
 parser.add_argument(
     '--spp', 
     default=4000,
@@ -39,17 +41,17 @@ parser.add_argument(
 # TODO: change for an array
 parser.add_argument(
     '--objs_folder_distrators',
-    default='google_scanned_models/',
+    default=f'{data_gen_root}/google_scanned_models/',
     help = "object to load folder"
 )
 parser.add_argument(
     '--objs_folder',
-    default='models/',
+    default=f'{data_gen_root}/models/',
     help = "object to load folder"
 )
 parser.add_argument(
     '--skyboxes_folder',
-    default='dome_hdri_haven/',
+    default=f'{data_gen_root}/dome_hdri_haven/',
     help = "dome light hdr"
 )
 parser.add_argument(
@@ -81,7 +83,7 @@ parser.add_argument(
 )
 parser.add_argument(
     '--outf',
-    default='output_example/',
+    default='dataset/',
     help = "output filename inside output/"
 )
 parser.add_argument('--seed',
@@ -127,19 +129,21 @@ parser.add_argument(
 opt = parser.parse_args()
 
 # # # # # # # # # # # # # # # # # # # # # # # # #
-if os.path.isdir("output"):
-    print(f'folder {"output"}/ exists')
-else:
-    os.mkdir("output")
-    print(f'created folder {"output"}/')
+outp = "/opt/ml/input/data/channel1"
 
-if os.path.isdir(f'output/{opt.outf}'):
-    print(f'folder output/{opt.outf}/ exists')
+if os.path.isdir(outp):
+    print(f'folder {outp}/ exists')
 else:
-    os.mkdir(f'output/{opt.outf}')
-    print(f'created folder output/{opt.outf}/')
+    os.makedirs(outp)
+    print(f'created folder {outp}/')
 
-opt.outf = f'output/{opt.outf}'
+if os.path.isdir(f'{outp}/{opt.outf}'):
+    print(f'folder {outp}/{opt.outf}/ exists')
+else:
+    os.makedirs(f'{outp}/{opt.outf}')
+    print(f'created folder {outp}/{opt.outf}/')
+
+opt.outf = f'{outp}/{opt.outf}'
 
 if not opt.seed is None:
     random.seed(int(opt.seed)) 
@@ -224,7 +228,6 @@ if opt.interactive:
     physicsClient = p.connect(p.GUI) # non-graphical version
 else:
     physicsClient = p.connect(p.DIRECT) # non-graphical version
-
 
 visii_pybullet = []
 names_to_export = []
@@ -311,16 +314,16 @@ for i_obj in range(int(opt.nb_distractors)):
     adding_mesh_object(name,obj_to_load,texture_to_load)
 
 
-google_content_folder = glob.glob(opt.objs_folder + "*/")
+google_content_folder = glob.glob(opt.objs_folder + "listerine")
 
 for i_obj in range(int(opt.nb_objects)):
 
     toy_to_load = google_content_folder[random.randint(0,len(google_content_folder)-1)]
 
-    obj_to_load = toy_to_load + "/google_16k/textured.obj"
-    texture_to_load = toy_to_load + "/google_16k/texture_map_flat.png"
+    obj_to_load = toy_to_load + "/listerine.obj"
+    texture_to_load = toy_to_load + "/Blue Listerine-1_30-09-2021-17-26-42.jpg"
     name = "hope_" + toy_to_load.split('/')[-2] + f"_{i_obj}"
-    adding_mesh_object(name,obj_to_load,texture_to_load,scale=0.01)
+    adding_mesh_object(name,obj_to_load,texture_to_load,scale=1)
 
     # p.applyExternalTorque(id_pybullet,-1,
     #     [   random.uniform(-force_rand,force_rand),
@@ -329,7 +332,6 @@ for i_obj in range(int(opt.nb_objects)):
     #     [0,0,0],
     #     flags=p.WORLD_FRAME
     # )
-
 
 camera_pybullet_col = p.createCollisionShape(p.GEOM_SPHERE,0.05)
 camera_pybullet = p.createMultiBody(
@@ -506,10 +508,10 @@ while condition:
             file_path = f"{opt.outf}/{str(i_render).zfill(5)}.depth.exr"
         )
 
-# subprocess.call(['ffmpeg', '-y',\
-#     '-framerate', '30', "-hide_banner", "-loglevel", \
-#     "panic",'-pattern_type', 'glob', '-i',\
-#     f"{opt.outf}/*.png", f"{opt.outf}/video.mp4"]) 
+subprocess.call(['ffmpeg', '-y',\
+    '-framerate', '30', "-hide_banner", "-loglevel", \
+    "panic",'-pattern_type', 'glob', '-i',\
+    f"{opt.outf}/*.png", f"{opt.outf}/video.mp4"]) 
 
 visii.deinitialize()
 

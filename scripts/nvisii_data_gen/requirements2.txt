@@ -1,0 +1,10 @@
+nvisii
+numpy 
+opencv-python
+pybullet
+randomcolor
+<<<<<<< HEAD:scripts/nvisii_data_gen/requirements2.txt
+=======
+requests
+simplejson
+>>>>>>> master:scripts/nvisii_data_gen/requirements.txt
