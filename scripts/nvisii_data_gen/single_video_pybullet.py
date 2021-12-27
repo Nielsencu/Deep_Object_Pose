@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument(
     '--spp', 
-    default=4000,
+    default=100,
     type=int,
     help = "number of sample per pixel, higher the more costly"
 )
@@ -54,17 +54,17 @@ parser.add_argument(
 )
 parser.add_argument(
     '--nb_objects',
-    default=28,
+    default=str(int(random.uniform(50,75))),
     help = "how many objects"
 )
 parser.add_argument(
     '--nb_distractors',
-    default=15,
+    default=str(int(random.uniform(20,30))),
     help = "how many objects"
 )
 parser.add_argument(
     '--nb_frames',
-    default=2000,
+    default=200,
     help = "how many frames to save"
 )
 parser.add_argument(
@@ -322,15 +322,15 @@ for i_obj in range(int(opt.nb_distractors)):
     adding_mesh_object(name,obj_to_load,texture_to_load)
 
 
-google_content_folder = glob.glob(opt.objs_folder + "listerine")
+google_content_folder = glob.glob(opt.objs_folder + "Artec/Artec")
 
 for i_obj in range(int(opt.nb_objects)):
 
     toy_to_load = google_content_folder[random.randint(0,len(google_content_folder)-1)]
 
-    obj_to_load = toy_to_load + "/listerine.obj"
-    texture_to_load = toy_to_load + "/Blue Listerine-1_30-09-2021-17-26-42.jpg"
-    name = "listerine" + toy_to_load.split('/')[-2] + f"_{i_obj}"
+    obj_to_load = toy_to_load + "/blue_baby_wipes/babywipes.obj"
+    texture_to_load = toy_to_load + "/blue_baby_wipes/Blue Baby Wipes_1.jpg"
+    name = "blue_wipes" + toy_to_load.split('/')[-2] + f"_{i_obj}"
     adding_mesh_object(name,obj_to_load,texture_to_load,scale=1)
 
     # p.applyExternalTorque(id_pybullet,-1,
@@ -414,6 +414,7 @@ i_render = 0
 condition = True
 
 while condition: 
+    start = time.time()
     p.stepSimulation()
     ### add skip updates here.
 
@@ -470,7 +471,7 @@ while condition:
             width=int(opt.width), 
             height=int(opt.height), 
             samples_per_pixel=int(opt.spp),
-            file_path=f"{opt.outf}/{str(i_render).zfill(5)}.png"    
+            file_path=f"{opt.outf}/{str(i_render).zfill(5)}_{opt.spp}.png"    
         )
         visii.sample_pixel_area(
             x_sample_interval = (.5,.5), 
@@ -515,6 +516,8 @@ while condition:
             options="depth",
             file_path = f"{opt.outf}/{str(i_render).zfill(5)}.depth.exr"
         )
+        print(f'Time taken {time.time() - start}')
+
 
 #subprocess.call(['ffmpeg', '-y',\
 #    '-framerate', '30', "-hide_banner", "-loglevel", \

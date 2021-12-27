@@ -48,7 +48,11 @@ COPY src /workspace/dope/src
 
 # Copy script for sagemaker to use
 COPY scripts/train2/generate_train.py /opt/ml/code/train.py
-COPY scripts/hyperparameters.json /opt/ml/input/config/  
+
+# If try on EC2
+COPY scripts/hyperparameters.json /opt/ml/input/config/
+COPY scripts/train2/output/dataset/ /opt/ml/input/data/channel1
+COPY net_epoch_60.pth /opt/ml/input/data/weights 
 
 ENV PYTHONPATH "${PYTHONPATH}:/workspace/dope/scripts/train2"
 RUN echo $PYTHONPATH
@@ -65,5 +69,5 @@ ENV SAGEMAKER_PROGRAM train.py
 
 # Specify train.py parameters
 COPY ./docker-entrypoint.sh /
-#ENTRYPOINT ["/docker-entrypoint.sh"]
 ENTRYPOINT ["python", "-m", "torch.distributed.launch", "/opt/ml/code/train.py"]
+#ENTRYPOINT ["python", "-m", "torch.distributed.launch", "--nproc_per_node=1" , "/opt/ml/code/train.py", "--sage", "--net_dope", "/opt/ml/input/data/weights/net_epoch_60.pth"]

@@ -82,7 +82,7 @@ conf_parser.add_argument("-c", "--config",
 
 parser = argparse.ArgumentParser()
 parser.add_argument('train', default='train', help="train?")
-parser.add_argument('--data', nargs='+', default="./output/dataset/", help='path to training data')
+parser.add_argument('--data', nargs='+', default="./output/", help='path to training data')
 parser.add_argument('--datatest', default="", help='path to data testing set')
 parser.add_argument('--testonly', action='store_true', help='only run inference') 
 parser.add_argument('--testbatchsize', default=1,type=int, help='size of the batchsize for testing')
@@ -152,13 +152,13 @@ parser.add_argument("--option")
 opt = parser.parse_args(remaining_argv)
 
 if opt.sage:
-    print(f"Using sagemaker directories")
+    print(f"Using sagemaker directories --------------------------------------------------------------------------")
     opt.data = ["/opt/ml/input/data/channel1"]
     opt.outf = "/opt/ml/model"
     hyperparameters_file = "/opt/ml/input/config/hyperparameters.json"
     data_gen_root = "/workspace/dope/scripts/nvisii_data_gen"
 else:
-    print(f"Using local directories")
+    print(f"Using local directories --------------------------------------------------------------------------")
     data_gen_root = "../nvisii_data_gen"
     hyperparameters_file = "../hyperparameters.json"
 
@@ -173,26 +173,29 @@ print(f"Training with {opt.gpuids} GPUs, on {obj}, for {opt.epochs} epochs, {img
 
 num_loop = imgs // 200 # num of images = num_loop * nb_frames
 
-# Synthetic data generation
-for i in range(0,num_loop):
-    to_call = [
-		"python",f'{data_gen_root}/single_video_pybullet.py',
-		'--spp','10',
-		'--nb_frames', '200',
-		'--nb_objects',str(int(random.uniform(50,75))),
-		'--static_camera',
-		'--outf',f"dataset/{str(i).zfill(3)}",
-	]
-    if opt.sage:
-        to_call.append("--sage")
-        to_call.append("--skyboxes_folder")
-        to_call.append("/workspace/dope/scripts/nvisii_data_gen/dome_hdri_haven/")
-        to_call.append("--objs_folder")
-        to_call.append("/workspace/dope/scripts/nvisii_data_gen_/models/")
-        to_call.append("--objs_folder_distrators")
-        to_call.append("/workspace/dope/scripts/nvisii_data_gen_/google_scanned_models/")
-    subprocess.call(to_call)
+print(f"Number of loops {num_loop}")
 
+# Synthetic data generation
+# for i in range(0,num_loop):
+#     to_call = [
+# 		"python",f'{data_gen_root}/single_video_pybullet.py',
+# 		'--spp','100',
+# 		'--nb_frames', '200',
+# 		'--nb_objects',str(int(random.uniform(50,75))),
+#         '--nb_distractors',str(int(random.uniform(20,30))),
+# 		'--static_camera',
+# 		'--outf',f"dataset/{str(i).zfill(3)}",
+# 	]
+#     if opt.sage:
+#         to_call.append("--sage")
+#         to_call.append("--skyboxes_folder")
+#         to_call.append("/workspace/dope/scripts/nvisii_data_gen/dome_hdri_haven/")
+#         to_call.append("--objs_folder")
+#         to_call.append("/workspace/dope/scripts/nvisii_data_gen_/models/")
+#         to_call.append("--objs_folder_distrators")
+#         to_call.append("/workspace/dope/scripts/nvisii_data_gen_/google_scanned_models/")
+#     subprocess.call(to_call)
+    
 print("Commence training ---------------------------------------------------------------------------------------------------")
 
 if opt.keypoints:
