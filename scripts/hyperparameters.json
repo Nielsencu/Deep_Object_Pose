@@ -5,6 +5,7 @@
     "imgs" : "50000",
     "spp" : 100,
     "net" : "net_epoch_60.pth",
-    "sage" : 1,
-    "generator" : "0"
+    "sage" : 0,
+    "generator" : "0",
+    "nb_frames" : "100"
 }

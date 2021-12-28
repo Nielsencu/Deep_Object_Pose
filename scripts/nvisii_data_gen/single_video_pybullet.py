@@ -138,6 +138,13 @@ parser.add_argument(
     help = "run on sagemaker"
 )
 
+parser.add_argument(
+    '--upload',
+    action='store_true',
+    default=False,
+    help = "upload sample imgs to s3"
+)
+
 opt = parser.parse_args()
 
 # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -153,6 +160,11 @@ if opt.sage:
     print(f'Objects folder {opt.objs_folder}')
     print(f'Distractors folder {opt.objs_folder_distrators}')
     print(f'Skyboxes folder {opt.skyboxes_folder}')
+    if os.path.isdir(f'/opt/ml/checkpoints/{opt.outf}/'):
+        print(f"Folder /opt/ml/checkpoints/{opt.outf}/ exists")
+    else:
+        os.makedirs(f'/opt/ml/checkpoints/{opt.outf}/')
+        print(f'Created checkpoint folder /opt/ml/checkpoints/{opt.outf}/')
 
 if os.path.isdir(outp):
     print(f'folder {outp}/ exists')
@@ -164,9 +176,12 @@ if os.path.isdir(f'{outp}/{opt.outf}'):
     print(f'folder {outp}/{opt.outf}/ exists')
 else:
     os.makedirs(f'{outp}/{opt.outf}')
-    print(f'created folder {outp}/{opt.outf}/')
+    print(f'Created output folder {outp}/{opt.outf}/')
 
-opt.outf = f'{outp}/{opt.outf}'
+
+outf = opt.outf
+opt.outf = f'{outp}/{outf}'
+opt.checkpt = f'/opt/ml/checkpoints/{outf}/'
 
 if not opt.seed is None:
     random.seed(int(opt.seed)) 
@@ -484,11 +499,16 @@ while condition:
             x_sample_interval = (0,1), 
             y_sample_interval = (0,1))
 
+        save_path = opt.outf
+        # Upload every first image to S3 for inspection
+        if i_render == 1:
+            save_path = opt.checkpt
+
         visii.render_to_file(
             width=int(opt.width), 
             height=int(opt.height), 
             samples_per_pixel=int(opt.spp),
-            file_path=f"{opt.outf}/{str(i_render).zfill(5)}_{opt.spp}.png"    
+            file_path=f"{save_path}/{str(i_render).zfill(5)}_{opt.spp}.png"    
         )
         visii.sample_pixel_area(
             x_sample_interval = (.5,.5), 
@@ -503,7 +523,7 @@ while condition:
             frame_count=1,
             bounce=int(0),
             options="entity_id",
-            file_path = f"{opt.outf}/{str(i_render).zfill(5)}.seg.exr"
+            file_path = f"{save_path}/{str(i_render).zfill(5)}.seg.exr"
         )
         segmentation_array = visii.render_data(
             width=int(opt.width), 
@@ -514,7 +534,7 @@ while condition:
             options="entity_id",
         )        
         export_to_ndds_file(
-            f"{opt.outf}/{str(i_render).zfill(5)}.json",
+            f"{save_path}/{str(i_render).zfill(5)}.json",
             obj_names = names_to_export,
             width = opt.width,
             height = opt.height,
@@ -531,8 +551,9 @@ while condition:
             frame_count=1,
             bounce=int(0),
             options="depth",
-            file_path = f"{opt.outf}/{str(i_render).zfill(5)}.depth.exr"
+            file_path = f"{save_path}/{str(i_render).zfill(5)}.depth.exr"
         )
+
         print(f'Time taken {time.time() - start}')
 
 

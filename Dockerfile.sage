@@ -49,9 +49,9 @@ COPY src /workspace/dope/src
 COPY scripts/train2/generate_train.py /opt/ml/code/train.py
 
 # If try on EC2
-COPY scripts/hyperparameters.json /opt/ml/input/config/
-COPY scripts/train2/output/dataset/ /opt/ml/input/data/channel1
-COPY net_epoch_60.pth /opt/ml/input/data/weights 
+# COPY scripts/hyperparameters.json /opt/ml/input/config/
+# COPY scripts/train2/output/dataset/ /opt/ml/input/data/channel1
+# COPY net_epoch_60.pth /opt/ml/input/data/weights 
 
 ENV PYTHONUNBUFFERED=TRUE
 ENV PYTHONDONTWRITEBYTECODE=TRUE
