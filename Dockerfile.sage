@@ -49,9 +49,9 @@ COPY src /workspace/dope/src
 COPY scripts/train2/generate_train.py /opt/ml/code/train.py
 
 # If try on EC2
-# COPY scripts/hyperparameters.json /opt/ml/input/config/
-# COPY scripts/train2/output/dataset/ /opt/ml/input/data/channel1
-# COPY net_epoch_60.pth /opt/ml/input/data/weights 
+COPY scripts/hyperparameters.json /opt/ml/input/config/
+COPY scripts/train2/output/dataset/ /opt/ml/input/data/channel1
+COPY net_epoch_60.pth /opt/ml/input/data/weights 
 
 ENV PYTHONUNBUFFERED=TRUE
 ENV PYTHONDONTWRITEBYTECODE=TRUE
@@ -67,4 +67,4 @@ ENV TERM=xterm
 ENV QT_X11_NO_MITSHM 1
 
 # Specify train.py parameters
-ENTRYPOINT ["python", "-m", "torch.distributed.launch", "--nproc_per_node=1" , "/opt/ml/code/train.py", "--sage", "--net", "/opt/ml/input/data/weights/net_epoch_60.pth"]
+ENTRYPOINT ["python", "-m", "torch.distributed.launch", "--nproc_per_node=1" , "/opt/ml/code/train.py"]

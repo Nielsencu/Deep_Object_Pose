@@ -137,7 +137,6 @@ parser.add_argument('--data2', default=None, help='path to dataset2')
 parser.add_argument('--size1', default=None, help='size of dataset1 in percentage (0,1)')
 parser.add_argument('--size2', default=None, help='size of dataset2 in percentage (0,1)')
 parser.add_argument("--local_rank", default=0, type=int)
-parser.add_argument("--sage", action="store_true", default=False, help="Use sagemaker?")
 parser.add_argument("--spp", default=100, help="sample per pixel?")
 
 # Read the config but do not overwrite the args written 
@@ -152,24 +151,8 @@ parser.set_defaults(**defaults)
 parser.add_argument("--option")
 opt = parser.parse_args(remaining_argv)
 
-if opt.sage:
-    print(f"Using sagemaker directories --------------------------------------------------------------------------")
-    opt.data = ["/opt/ml/input/data/channel1"]
-    opt.outf = "/opt/ml/model"
-    opt.checkpt = "/opt/ml/checkpoints"
-    opt.net = "/opt/ml/input/data/weights"
-    hyperparameters_file = "/opt/ml/input/config/hyperparameters.json"
-    data_gen_root = "/workspace/dope/scripts/nvisii_data_gen"
-else:
-    print(f"Using local directories --------------------------------------------------------------------------")
-    # Use default
-    opt.data = opt.data
-    opt.outf = opt.outf
-    opt.checkpt = ''
-    opt.net = "../../weights"
-    data_gen_root = "../nvisii_data_gen"
-    hyperparameters_file = "../hyperparameters.json"
 
+hyperparameters_file = "/opt/ml/input/config/hyperparameters.json"
 # hyperparameters
 with open(hyperparameters_file) as f:
    hyperparameters = json.load(f)
@@ -178,28 +161,53 @@ imgs = int(hyperparameters["imgs"])
 opt.epochs = int(hyperparameters["epochs"])
 opt.gpuids = hyperparameters["gpus"].split(" ")
 opt.spp = hyperparameters["spp"]
-opt.net = (opt.net + hyperparameters["net"] if hyperparameters["net"] else "")
-print(f"Training with {opt.gpuids} GPUs, on {obj}, for {opt.epochs} epochs, {imgs} images")
+opt.sage = int(hyperparameters["sage"])
+opt.net = hyperparameters["net"]
+opt.generator = int(hyperparameters["generator"])
+print(f"Training with {opt.gpuids} GPUs, on {obj}, for {opt.epochs} epochs, {imgs} images with {opt.spp} spp")
+if opt.net:
+    print(f"Network weight is {opt.net}")
+
+if opt.sage:
+    print(f"Using sagemaker directories --------------------------------------------------------------------------")
+    opt.data = ["/opt/ml/input/data/channel1"]
+    opt.outf = "/opt/ml/model"
+    opt.checkpt = "/opt/ml/checkpoints"
+    if opt.net:
+        opt.net = "/opt/ml/input/data/weights/" + opt.net
+    data_gen_root = "/workspace/dope/scripts/nvisii_data_gen"
+else:
+    print(f"Using local directories --------------------------------------------------------------------------")
+    # Use default
+    opt.data = opt.data
+    opt.outf = opt.outf
+    opt.checkpt = ''
+    if opt.net:
+        opt.net = "../../weights/" + opt.net
+    data_gen_root = "../nvisii_data_gen"
 
 num_loop = imgs // 200 # num of images = num_loop * nb_frames
 
 print(f"Number of loops {num_loop}")
 
 # Synthetic data generation
-for i in range(0,num_loop):
-    to_call = [
-		"python",f'{data_gen_root}/single_video_pybullet.py',
-		'--spp',f'{opt.spp}',
-		'--nb_frames', '200',
-		'--nb_objects',str(int(random.uniform(50,75))),
-        '--nb_distractors',str(int(random.uniform(20,30))),
-		'--static_camera',
-		'--outf',f"dataset/{str(i).zfill(3)}",
-        '--obj', f'{obj}'
-	]
-    if opt.sage:
-        to_call.append("--sage")
-    subprocess.call(to_call)
+if opt.generator:
+    for i in range(0,num_loop):
+        to_call = [
+            "python",f'{data_gen_root}/single_video_pybullet.py',
+            '--spp',f'{opt.spp}',
+            '--nb_frames', '200',
+            '--nb_objects',str(int(random.uniform(50,75))),
+            '--nb_distractors',str(int(random.uniform(20,30))),
+            '--static_camera',
+            '--outf',f"dataset/{str(i).zfill(3)}",
+            '--obj', f'{obj}'
+        ]
+        if opt.sage:
+            to_call.append("--sage")
+        subprocess.call(to_call)
+else:
+    print("Skipping synthetic data generation")
     
 print("Commence training ---------------------------------------------------------------------------------------------------")
 
@@ -406,7 +414,7 @@ net = torch.nn.parallel.DistributedDataParallel(net.cuda(),
 
 if opt.net != '':
     print("continue training on pretrained weught")
-    net.load_state_dict(torch.load(f'/opt/ml/input/data/weights/{opt.net}'))
+    net.load_state_dict(torch.load(f'{opt.net}'))
 
 parameters = filter(lambda p: p.requires_grad, net.parameters())
 optimizer = optim.Adam(parameters,lr=opt.lr)
