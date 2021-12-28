@@ -3,6 +3,8 @@
 *._
 *.png
 *.exr
+*.json
+*.pth
 __pycache__
 venv
 .idea

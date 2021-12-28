@@ -1,7 +1,5 @@
 # The name of our algorithm
-algorithm_name=sagemaker-pytorch-dope3
-
-#cd container
+algorithm_name=sagemaker-pytorch-dope1-testrun
 
 #chmod +x cifar10/train
 #chmod +x cifar10/serve
@@ -9,8 +7,7 @@ algorithm_name=sagemaker-pytorch-dope3
 account=$(aws sts get-caller-identity --query Account --output text)
 
 # Get the region defined in the current configuration (default to us-west-2 if none defined)
-region=$(aws configure get region)
-region=${region:-us-west-2}
+region=${region:-ap-southeast-1}
 
 fullname="${account}.dkr.ecr.${region}.amazonaws.com/${algorithm_name}:latest"
 

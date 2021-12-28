@@ -14,3 +14,11 @@ PyYAML
 tensorboardX
 albumentations
 opencv-contrib-python
+nvisii
+numpy 
+opencv-python
+pybullet
+randomcolor
+requests
+simplejson
+
