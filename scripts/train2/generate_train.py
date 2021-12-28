@@ -163,10 +163,13 @@ opt.gpuids = hyperparameters["gpus"].split(" ")
 opt.spp = hyperparameters["spp"]
 opt.sage = int(hyperparameters["sage"])
 opt.net = hyperparameters["net"]
+opt.nb_frames = hyperparameters["nb_frames"]
 if opt.net == '0':
     opt.net = ''
 opt.generator = int(hyperparameters["generator"])
+
 print(f"Training with {opt.gpuids} GPUs, on {obj}, for {opt.epochs} epochs, {imgs} images with {opt.spp} spp")
+
 if opt.net:
     print(f"Network weight is {opt.net}")
 else:
@@ -190,7 +193,7 @@ else:
         opt.net = "../../weights/" + opt.net
     data_gen_root = "../nvisii_data_gen"
 
-num_loop = imgs // 200 # num of images = num_loop * nb_frames
+num_loop = imgs // int(opt.nb_frames) # num of images = num_loop * nb_frames
 
 print(f"Number of loops {num_loop}")
 
@@ -200,7 +203,7 @@ if opt.generator:
         to_call = [
             "python",f'{data_gen_root}/single_video_pybullet.py',
             '--spp',f'{opt.spp}',
-            '--nb_frames', '200',
+            '--nb_frames', f'{opt.nb_frames}',
             '--nb_objects',str(int(random.uniform(50,75))),
             '--nb_distractors',str(int(random.uniform(20,30))),
             '--static_camera',

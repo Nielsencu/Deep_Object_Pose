@@ -6,5 +6,6 @@
     "spp" : 100,
     "net" : "net_epoch_60.pth",
     "sage" : 0,
-    "generator" : "0"
+    "generator" : "0",
+    "nb_frames" : "100"
 }
