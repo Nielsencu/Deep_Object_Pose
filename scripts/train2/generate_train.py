@@ -163,10 +163,14 @@ opt.gpuids = hyperparameters["gpus"].split(" ")
 opt.spp = hyperparameters["spp"]
 opt.sage = int(hyperparameters["sage"])
 opt.net = hyperparameters["net"]
+if opt.net == '0':
+    opt.net = ''
 opt.generator = int(hyperparameters["generator"])
 print(f"Training with {opt.gpuids} GPUs, on {obj}, for {opt.epochs} epochs, {imgs} images with {opt.spp} spp")
 if opt.net:
     print(f"Network weight is {opt.net}")
+else:
+    print(f"Using dope network weight")
 
 if opt.sage:
     print(f"Using sagemaker directories --------------------------------------------------------------------------")
@@ -412,8 +416,8 @@ net = torch.nn.parallel.DistributedDataParallel(net.cuda(),
     output_device=opt.local_rank)
 # print(net)
 
-if opt.net != '':
-    print("continue training on pretrained weught")
+if opt.net:
+    print("continue training on pretrained weight")
     net.load_state_dict(torch.load(f'{opt.net}'))
 
 parameters = filter(lambda p: p.requires_grad, net.parameters())
