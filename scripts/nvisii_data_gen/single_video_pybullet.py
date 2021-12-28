@@ -36,6 +36,13 @@ parser.add_argument(
     type=int,
     help = 'image output height'
 )
+
+parser.add_argument(
+    '--obj',
+    default = 'listerine',
+    help= 'Object to train on'
+)
+
 # TODO: change for an array
 parser.add_argument(
     '--objs_folder_distrators',
@@ -138,6 +145,14 @@ outp = './output/'
 if opt.sage:
     outp = "/opt/ml/input/data/channel1"
     print(f"Output folder {outp}")
+    datagen_folder = "/opt/ml/input/data/datagen"
+    print(f'Datagen folder {datagen_folder}')
+    opt.objs_folder = datagen_folder + "/models"
+    opt.objs_folder_distrators = datagen_folder + "/google_scanned_models"
+    opt.skyboxes_folder = datagen_folder + "/dome_hdri_haven"
+    print(f'Objects folder {opt.objs_folder}')
+    print(f'Distractors folder {opt.objs_folder_distrators}')
+    print(f'Skyboxes folder {opt.skyboxes_folder}')
 
 if os.path.isdir(outp):
     print(f'folder {outp}/ exists')
@@ -315,8 +330,8 @@ for i_obj in range(int(opt.nb_distractors)):
 
     toy_to_load = google_content_folder[random.randint(0,len(google_content_folder)-1)]
 
-    obj_to_load = toy_to_load + "/meshes/model.obj"
-    texture_to_load = toy_to_load + "/materials/textures/texture.png"
+    obj_to_load = toy_to_load + "meshes/model.obj"
+    texture_to_load = toy_to_load + "materials/textures/texture.png"
     name = "google_"+toy_to_load.split('/')[-2] + f"_{i_obj}"
 
     adding_mesh_object(name,obj_to_load,texture_to_load)
@@ -328,9 +343,11 @@ for i_obj in range(int(opt.nb_objects)):
 
     toy_to_load = google_content_folder[random.randint(0,len(google_content_folder)-1)]
 
-    obj_to_load = toy_to_load + "/blue_baby_wipes/babywipes.obj"
-    texture_to_load = toy_to_load + "/blue_baby_wipes/Blue Baby Wipes_1.jpg"
-    name = "blue_wipes" + toy_to_load.split('/')[-2] + f"_{i_obj}"
+    obj = opt.obj
+
+    obj_to_load = toy_to_load + f"/{obj}/{obj}.obj"
+    texture_to_load = toy_to_load + f"/{obj}/{obj}.jpg"
+    name = f"{obj}" + toy_to_load.split('/')[-2] + f"_{i_obj}"
     adding_mesh_object(name,obj_to_load,texture_to_load,scale=1)
 
     # p.applyExternalTorque(id_pybullet,-1,

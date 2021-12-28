@@ -11,6 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN mkdir -p /opt/ml/code \
     && mkdir -p /opt/ml/model \
     && mkdir -p /opt/ml/input/data/channel1 \
+    && mkdir -p /opt/ml/input/data/weights \
     && mkdir -p /workspace/dope
 
 # Install system and development components
@@ -34,10 +35,8 @@ RUN apt-get update && apt-get -y --no-install-recommends install \
 # pip install required Python packages
 COPY requirements.txt ${HOME}
 COPY scripts/train2/requirements1.txt ${HOME}
-COPY scripts/nvisii_data_gen/requirements2.txt ${HOME}
-RUN python3 -m pip install --no-cache-dir -r ${HOME}/requirements.txt \
-    && python3 -m pip install --no-cache-dir -r ${HOME}/requirements1.txt \
-    && python3 -m pip install --no-cache-dir -r ${HOME}/requirements2.txt
+RUN python3 -m pip install --no-cache-dir -r ${HOME}/requirements.txt
+RUN python3 -m pip install --no-cache-dir -r ${HOME}/requirements1.txt 
 
 # Copy codes locally
 COPY scripts /workspace/dope/scripts
@@ -50,10 +49,12 @@ COPY src /workspace/dope/src
 COPY scripts/train2/generate_train.py /opt/ml/code/train.py
 
 # If try on EC2
-COPY scripts/hyperparameters.json /opt/ml/input/config/
-COPY scripts/train2/output/dataset/ /opt/ml/input/data/channel1
-COPY net_epoch_60.pth /opt/ml/input/data/weights 
+# COPY scripts/hyperparameters.json /opt/ml/input/config/
+# COPY scripts/train2/output/dataset/ /opt/ml/input/data/channel1
+# COPY net_epoch_60.pth /opt/ml/input/data/weights 
 
+ENV PYTHONUNBUFFERED=TRUE
+ENV PYTHONDONTWRITEBYTECODE=TRUE
 ENV PYTHONPATH "${PYTHONPATH}:/workspace/dope/scripts/train2"
 RUN echo $PYTHONPATH
 
@@ -65,9 +66,5 @@ ENV TERM=xterm
 # Some QT-Apps don't show controls without this
 ENV QT_X11_NO_MITSHM 1
 
-ENV SAGEMAKER_PROGRAM train.py
-
 # Specify train.py parameters
-COPY ./docker-entrypoint.sh /
-ENTRYPOINT ["python", "-m", "torch.distributed.launch", "/opt/ml/code/train.py"]
-#ENTRYPOINT ["python", "-m", "torch.distributed.launch", "--nproc_per_node=1" , "/opt/ml/code/train.py", "--sage", "--net_dope", "/opt/ml/input/data/weights/net_epoch_60.pth"]
+ENTRYPOINT ["python", "-m", "torch.distributed.launch", "--nproc_per_node=1" , "/opt/ml/code/train.py", "--sage", "--net", "/opt/ml/input/data/weights/net_epoch_60.pth"]
