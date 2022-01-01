@@ -1,11 +1,14 @@
 {
     "obj" : "listerine",
     "gpus" : "0",
-    "epochs" : "30",
-    "imgs" : "50000",
+    "epochs" : "10",
+    "imgs" : "200",
     "spp" : 100,
     "net" : "net_epoch_60.pth",
-    "sage" : 0,
-    "generator" : "0",
-    "nb_frames" : "100"
+    "sage" : 1,
+    "generator" : "1",
+    "nb_frames" : "100",
+    "optimizer" : "adam",
+    "batch_size" : "32",
+    "workers" : "8"
 }

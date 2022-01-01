@@ -145,6 +145,14 @@ parser.add_argument(
     help = "upload sample imgs to s3"
 )
 
+parser.add_argument(
+    '--generate_only',
+    action='store_true',
+    default=False,
+    help = "Only generate images and upload to S3"
+)
+
+
 opt = parser.parse_args()
 
 # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -152,14 +160,6 @@ outp = './output/'
 if opt.sage:
     outp = "/opt/ml/input/data/channel1"
     print(f"Output folder {outp}")
-    datagen_folder = "/opt/ml/input/data/datagen"
-    print(f'Datagen folder {datagen_folder}')
-    opt.objs_folder = datagen_folder + "/models/"
-    opt.objs_folder_distrators = datagen_folder + "/google_scanned_models/"
-    opt.skyboxes_folder = datagen_folder + "/dome_hdri_haven/"
-    print(f'Objects folder {opt.objs_folder}')
-    print(f'Distractors folder {opt.objs_folder_distrators}')
-    print(f'Skyboxes folder {opt.skyboxes_folder}')
     if os.path.isdir(f'/opt/ml/checkpoints/{opt.outf}/'):
         print(f"Folder /opt/ml/checkpoints/{opt.outf}/ exists")
     else:
@@ -444,6 +444,7 @@ plane6_body = p.createMultiBody(
 i_frame = -1
 i_render = 0
 condition = True
+print(f'spp : {opt.spp}, save path : {opt.outf}')
 
 while condition: 
     start = time.time()
@@ -490,8 +491,6 @@ while condition:
         
         if not i_frame % int(opt.skip_frame) == 0:
             continue
-
-        print(f"{str(i_render).zfill(5)}/{str(opt.nb_frames).zfill(5)}")
         
         i_render +=1
 
@@ -499,10 +498,18 @@ while condition:
             x_sample_interval = (0,1), 
             y_sample_interval = (0,1))
 
-        save_path = opt.outf
-        # Upload every first image to S3 for inspection
-        if i_render == 1:
+        # Only generate image, upload all to S3
+        if opt.generate_only:
             save_path = opt.checkpt
+        else:
+            # Upload every first image to S3 for inspection which is used for training
+            if i_render == 1:
+                save_path = opt.checkpt
+            else:
+                save_path = opt.outf
+        
+
+        print(f"{str(i_render).zfill(5)}/{str(opt.nb_frames).zfill(5)}")
 
         visii.render_to_file(
             width=int(opt.width), 
@@ -523,7 +530,7 @@ while condition:
             frame_count=1,
             bounce=int(0),
             options="entity_id",
-            file_path = f"{save_path}/{str(i_render).zfill(5)}.seg.exr"
+            file_path = f"{save_path}/{str(i_render).zfill(5)}_{opt.spp}.seg.exr"
         )
         segmentation_array = visii.render_data(
             width=int(opt.width), 
@@ -534,7 +541,7 @@ while condition:
             options="entity_id",
         )        
         export_to_ndds_file(
-            f"{save_path}/{str(i_render).zfill(5)}.json",
+            f"{save_path}/{str(i_render).zfill(5)}_{opt.spp}.json",
             obj_names = names_to_export,
             width = opt.width,
             height = opt.height,
@@ -551,8 +558,10 @@ while condition:
             frame_count=1,
             bounce=int(0),
             options="depth",
-            file_path = f"{save_path}/{str(i_render).zfill(5)}.depth.exr"
+            file_path = f"{save_path}/{str(i_render).zfill(5)}_{opt.spp}.depth.exr"
         )
+
+        #print(f'Length of directory {save_path} is {len(os.listdir(save_path))}')
 
         print(f'Time taken {time.time() - start}')
 
