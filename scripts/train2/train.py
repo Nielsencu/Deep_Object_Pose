@@ -65,18 +65,8 @@ torch.backends.cudnn.benchmark = True
 # os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3"
 # os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
-data_dir = ["/opt/ml/input/data/channel1"]
-model_dir = "/opt/ml/model"
-hyperparameters_file = "/opt/ml/input/config/hyperparameters.json"
-
-# hyperparameters
-with open(hyperparameters_file) as f:
-   hyperparameters = json.load(f)
-gpus = hyperparameters["gpus"]
-obj = hyperparameters["obj"]
-gpuids = gpus.split(" ")
-print(f"Using {gpuids} GPUs")
-print(f"Training {obj}")
+import random 
+import subprocess
 
 print ("start:" , datetime.datetime.now().time())
 
@@ -92,7 +82,7 @@ conf_parser.add_argument("-c", "--config",
 
 parser = argparse.ArgumentParser()
 parser.add_argument('train', default='train', help="train?")
-parser.add_argument('--data', nargs='+', default=data_dir, help='path to training data')
+parser.add_argument('--data', nargs='+', default="./output/", help='path to training data')
 parser.add_argument('--datatest', default="", help='path to data testing set')
 parser.add_argument('--testonly', action='store_true', help='only run inference') 
 parser.add_argument('--testbatchsize', default=1,type=int, help='size of the batchsize for testing')
@@ -121,7 +111,7 @@ parser.add_argument('--loginterval', type=int, default=100)
 parser.add_argument('--gpuids',nargs='+', type=int, default=[0], help='GPUs to use')
 parser.add_argument('--extensions',nargs='+', type=str, default=["png"], 
     help='Extensions to use, you can have multiple entries seperated by space, e.g., png jpeg. ')
-parser.add_argument('--outf', default=model_dir, help='folder to output images and model checkpoints')
+parser.add_argument('--outf', default="./output/models", help='folder to output images and model checkpoints')
 parser.add_argument('--sigma', default=4, help='keypoint creation sigma')
 parser.add_argument('--keypoints', default=None, 
     help='list of keypoints to load from the json files.')
@@ -147,11 +137,11 @@ parser.add_argument('--data2', default=None, help='path to dataset2')
 parser.add_argument('--size1', default=None, help='size of dataset1 in percentage (0,1)')
 parser.add_argument('--size2', default=None, help='size of dataset2 in percentage (0,1)')
 parser.add_argument("--local_rank", default=0, type=int)
+parser.add_argument("--spp", default=100, help="sample per pixel?")
 
 # Read the config but do not overwrite the args written 
 args, remaining_argv = conf_parser.parse_known_args()
 defaults = { "option":"default" }
-
 if args.config:
     config = configparser.SafeConfigParser()
     config.read([args.config])
@@ -160,6 +150,53 @@ if args.config:
 parser.set_defaults(**defaults)
 parser.add_argument("--option")
 opt = parser.parse_args(remaining_argv)
+
+
+hyperparameters_file = "/opt/ml/input/config/hyperparameters.json"
+# hyperparameters
+with open(hyperparameters_file) as f:
+   hyperparameters = json.load(f)
+obj = hyperparameters["obj"]
+imgs = int(hyperparameters["imgs"])
+opt.epochs = int(hyperparameters["epochs"])
+opt.gpuids = hyperparameters["gpus"].split(" ")
+opt.spp = hyperparameters["spp"]
+opt.sage = int(hyperparameters["sage"])
+opt.net = hyperparameters["net"]
+opt.nb_frames = hyperparameters["nb_frames"]
+opt.optimizer = hyperparameters["optimizer"]
+opt.batchsize = int(hyperparameters["batch_size"])
+opt.workers = int(hyperparameters["workers"])
+if opt.net == '0':
+    opt.net = ''
+opt.generator = int(hyperparameters["generator"])
+
+print(f"Training {obj} with {opt.gpuids} GPUs, for {opt.epochs} epochs, {imgs} images with {opt.spp} spp, {opt.workers} data loaders, {opt.batchsize} batchsize, {opt.optimizer} optimizer")
+
+if opt.net:
+    print(f"Network weight is {opt.net}")
+else:
+    print(f"Using dope network weight")
+
+if opt.sage:
+    print(f"Using sagemaker directories --------------------------------------------------------------------------")
+    opt.data = ["/opt/ml/input/data/channel1"]
+    opt.outf = "/opt/ml/model"
+    opt.checkpt = "/opt/ml/checkpoints"
+    if opt.net:
+        opt.net = "/opt/ml/input/data/weights/" + opt.net
+    data_gen_root = "/workspace/dope/scripts/nvisii_data_gen"
+else:
+    print(f"Using local directories --------------------------------------------------------------------------")
+    # Use default
+    opt.data = opt.data
+    opt.outf = opt.outf
+    opt.checkpt = ''
+    if opt.net:
+        opt.net = "../../weights/" + opt.net
+    data_gen_root = "../nvisii_data_gen"
+    
+print("Commence training ---------------------------------------------------------------------------------------------------")
 
 if opt.keypoints:
     opt.keypoints = eval(opt.keypoints)
@@ -251,11 +288,10 @@ if opt.local_rank == 0:
 
 random.seed(opt.manualseed)
 
-print(opt.local_rank)
+print(f"Local rank {opt.local_rank}")
 torch.cuda.set_device(opt.local_rank)
 torch.distributed.init_process_group(backend='NCCL',
                                      init_method='env://')
-
 
 torch.manual_seed(opt.manualseed)
 
@@ -362,12 +398,12 @@ net = torch.nn.parallel.DistributedDataParallel(net.cuda(),
     output_device=opt.local_rank)
 # print(net)
 
-if opt.net != '':
-    net.load_state_dict(torch.load(opt.net))
+if opt.net:
+    print("continue training on pretrained weight")
+    net.load_state_dict(torch.load(f'{opt.net}'))
 
 parameters = filter(lambda p: p.requires_grad, net.parameters())
 optimizer = optim.Adam(parameters,lr=opt.lr)
-
 
 with open (opt.outf+'/loss_train.txt','w') as file: 
     file.write('epoch,batchid,loss\n')
@@ -405,11 +441,13 @@ def _runnetwork(epoch,train_loader,train=True,syn=False):
         # todo opt.model path to the 3d model
 
         #Create the folders for output
-        # try:
-        #     namefile = '/test_{}.csv'.format(epoch)
-        #     with open (opt.outf+namefile,'w') as file:
-        #         file.write("img, trans_gu, trans_gt, agg_error \n")
-        #     os.makedirs(opt.outf+"/test/{}/".format(str(epoch).zfill(3)))
+        try:
+            namefile = '/test_{}.csv'.format(epoch)
+            with open (opt.outf+namefile,'w') as file:
+                file.write("img, trans_gu, trans_gt, agg_error \n")
+            os.makedirs(opt.outf+"/test/{}/".format(str(epoch).zfill(3)))
+        except Exception as e:
+            print(e)
         all_data_to_save = []   
 
     loss_avg_to_log = {}
@@ -552,11 +590,11 @@ def _runnetwork(epoch,train_loader,train=True,syn=False):
             nb_update_network+=1
             
             
-            # namefile = '/loss_train.txt'
-            # with open (opt.outf+namefile,'a') as file:
-            #     s = '{}, {},{:.15f}\n'.format(
-            #         epoch,batch_idx,loss.item()) 
-            #     file.write(s)
+            namefile = '/loss_train.txt'
+            with open (opt.outf+namefile,'a') as file:
+                s = '{}, {},{:.15f}\n'.format(
+                    epoch,batch_idx,loss.item()) 
+                file.write(s)
         
         # log the loss
         loss_avg_to_log["loss"].append(loss.item())
@@ -570,6 +608,8 @@ def _runnetwork(epoch,train_loader,train=True,syn=False):
                     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.15f}'.format(
                         epoch, batch_idx * len(data), len(train_loader.dataset),
                         100. * batch_idx / len(train_loader), loss.item()))
+                    print("torch.cuda.memory_allocated: %fGB"%(torch.cuda.memory_allocated()/1024/1024/1024))
+                    print("torch.cuda.memory_cached: %fGB"%(torch.cuda.memory_cached()/1024/1024/1024))
 
                 else:
                     print('Test  Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.15f}'.format(
@@ -613,6 +653,9 @@ for epoch in range(1, opt.epochs + 1):
         if opt.local_rank == 0:
             if not opt.dontsave is True:
                 torch.save(net.state_dict(), f'{opt.outf}/net_{opt.namefile}_{str(epoch).zfill(2)}.pth')
+                # Save to checkpoint
+                if opt.checkpt:
+                    torch.save(net.state_dict(), f'{opt.checkpt}/net_{opt.namefile}_{str(epoch).zfill(2)}.pth')
             else:
                 torch.save(net.state_dict(), f'{opt.outf}/net_{opt.namefile}.pth')
     except:

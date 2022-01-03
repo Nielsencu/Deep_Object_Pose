@@ -1,24 +1,14 @@
 matplotlib
 simplejson
-numpy
-opencv_python
+opencv-contrib-python-headless
 photutils
-scipy
-torch
 pyquaternion
 tqdm
-pyrr
-Pillow==5.2.0
-torchvision
 PyYAML
 tensorboardX
 albumentations
-opencv-contrib-python
 nvisii
-numpy 
-opencv-python
 pybullet
 randomcolor
 requests
-simplejson
 

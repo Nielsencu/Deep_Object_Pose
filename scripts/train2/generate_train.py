@@ -164,11 +164,14 @@ opt.spp = hyperparameters["spp"]
 opt.sage = int(hyperparameters["sage"])
 opt.net = hyperparameters["net"]
 opt.nb_frames = hyperparameters["nb_frames"]
+opt.optimizer = hyperparameters["optimizer"]
+opt.batchsize = int(hyperparameters["batch_size"])
+opt.workers = int(hyperparameters["workers"])
 if opt.net == '0':
     opt.net = ''
 opt.generator = int(hyperparameters["generator"])
 
-print(f"Training with {opt.gpuids} GPUs, on {obj}, for {opt.epochs} epochs, {imgs} images with {opt.spp} spp")
+print(f"Training {obj} with {opt.gpuids} GPUs, for {opt.epochs} epochs, {imgs} images with {opt.spp} spp, {opt.workers} data loaders, {opt.batchsize} batchsize, {opt.optimizer} optimizer")
 
 if opt.net:
     print(f"Network weight is {opt.net}")
@@ -212,6 +215,19 @@ if opt.generator:
         ]
         if opt.sage:
             to_call.append("--sage")
+            datagen_folder = "/opt/ml/input/data/datagen"
+            opt.objs_folder = datagen_folder + "/models/"
+            print(f'Objects folder {opt.objs_folder}')
+            to_call.append('--objs_folder')
+            to_call.append(f'{opt.objs_folder}')
+            opt.objs_folder_distrators = datagen_folder + "/google_scanned_models/"
+            print(f'Distractors folder {opt.objs_folder_distrators}')
+            to_call.append('--objs_folder_distrators')
+            to_call.append(f'{opt.objs_folder_distrators}')
+            opt.skyboxes_folder = datagen_folder + "/dome_hdri_haven/"
+            print(f'Skyboxes folder {opt.skyboxes_folder}')
+            to_call.append('--skyboxes_folder')
+            to_call.append(f'{opt.skyboxes_folder}')
         subprocess.call(to_call)
 else:
     print("Skipping synthetic data generation")
@@ -308,11 +324,10 @@ if opt.local_rank == 0:
 
 random.seed(opt.manualseed)
 
-print(opt.local_rank)
+print(f"Local rank {opt.local_rank}")
 torch.cuda.set_device(opt.local_rank)
 torch.distributed.init_process_group(backend='NCCL',
                                      init_method='env://')
-
 
 torch.manual_seed(opt.manualseed)
 
@@ -672,6 +687,8 @@ for epoch in range(1, opt.epochs + 1):
         if opt.local_rank == 0:
             if not opt.dontsave is True:
                 torch.save(net.state_dict(), f'{opt.outf}/net_{opt.namefile}_{str(epoch).zfill(2)}.pth')
+                print("torch.cuda.memory_allocated: %fGB"%(torch.cuda.memory_allocated()/1024/1024/1024))
+                print("torch.cuda.memory_cached: %fGB"%(torch.cuda.memory_cached()/1024/1024/1024))
                 # Save to checkpoint
                 if opt.checkpt:
                     torch.save(net.state_dict(), f'{opt.checkpt}/net_{opt.namefile}_{str(epoch).zfill(2)}.pth')

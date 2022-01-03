@@ -12,6 +12,9 @@ RUN mkdir -p /opt/ml/code \
     && mkdir -p /opt/ml/model \
     && mkdir -p /opt/ml/input/data/channel1 \
     && mkdir -p /opt/ml/input/data/weights \
+    && mkdir -p /opt/ml/input/data/datagen/models \
+    && mkdir -p /opt/ml/input/data/datagen/dome_hdri_haven \
+    && mkdir -p /opt/ml/input/data/datagen/google_scanned_models \
     && mkdir -p /workspace/dope
 
 # Install system and development components
@@ -49,9 +52,12 @@ COPY src /workspace/dope/src
 COPY scripts/train2/generate_train.py /opt/ml/code/train.py
 
 # If try on EC2
-# COPY scripts/hyperparameters.json /opt/ml/input/config/
+COPY scripts/hyperparameters.json /opt/ml/input/config/
 # COPY scripts/train2/output/dataset/ /opt/ml/input/data/channel1
-# COPY net_epoch_60.pth /opt/ml/input/data/weights 
+# COPY net_epoch_60.pth /opt/ml/input/data/weights/
+# COPY scripts/nvisii_data_gen/models /opt/ml/input/data/datagen/models
+# COPY scripts/nvisii_data_gen/google_scanned_models /opt/ml/input/data/datagen/google_scanned_models
+# COPY scripts/nvisii_data_gen/dome_hdri_haven /opt/ml/input/data/datagen/dome_hdri_haven
 
 ENV PYTHONUNBUFFERED=TRUE
 ENV PYTHONDONTWRITEBYTECODE=TRUE
