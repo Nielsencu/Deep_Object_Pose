@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument(
     '--spp', 
-    default=100,
+    default=10,
     type=int,
     help = "number of sample per pixel, higher the more costly"
 )
@@ -172,16 +172,16 @@ else:
     os.makedirs(outp)
     print(f'created folder {outp}/')
 
-if os.path.isdir(f'{outp}/{opt.outf}'):
-    print(f'folder {outp}/{opt.outf}/ exists')
+if os.path.isdir(f'{outp}/{opt.outf}_{opt.spp}'):
+    print(f'folder {outp}/{opt.outf}_{opt.spp}/ exists')
 else:
-    os.makedirs(f'{outp}/{opt.outf}')
-    print(f'Created output folder {outp}/{opt.outf}/')
+    os.makedirs(f'{outp}/{opt.outf}_{opt.spp}')
+    print(f'Created output folder {outp}/{opt.outf}_{opt.spp}/')
 
 
-outf = opt.outf
+outf = f'{opt.outf}_{opt.spp}'
 opt.outf = f'{outp}/{outf}'
-opt.checkpt = f'/opt/ml/checkpoints/{outf}/'
+opt.checkpt = f'/opt/ml/checkpoints/{outf}'
 
 if not opt.seed is None:
     random.seed(int(opt.seed)) 
@@ -298,9 +298,9 @@ def adding_mesh_object(name, obj_to_load,texture_to_load,scale=1):
     toy.get_transform().set_scale(visii.vec3(scale))
     toy.get_transform().set_position(
         visii.vec3(
-            random.uniform(0.1,2),
+            random.uniform(2,3),
             random.uniform(-1,1),
-            random.uniform(-1,2),
+            random.uniform(-1,1),
             )
         )
     toy.get_transform().set_rotation(
@@ -498,15 +498,18 @@ while condition:
             x_sample_interval = (0,1), 
             y_sample_interval = (0,1))
 
-        # Only generate image, upload all to S3
-        if opt.generate_only:
-            save_path = opt.checkpt
-        else:
-            # Upload every first image to S3 for inspection which is used for training
-            if i_render == 1:
+        if opt.sage:
+            # Only generate image, upload all to S3
+            if opt.generate_only:
                 save_path = opt.checkpt
             else:
-                save_path = opt.outf
+                # Upload every first image to S3 for inspection which is used for training
+                if i_render == 1:
+                    save_path = opt.checkpt
+                else:
+                    save_path = opt.outf
+        else:
+            save_path = opt.outf
         
 
         print(f"{str(i_render).zfill(5)}/{str(opt.nb_frames).zfill(5)}")
