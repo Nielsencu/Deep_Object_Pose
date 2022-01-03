@@ -608,6 +608,8 @@ def _runnetwork(epoch,train_loader,train=True,syn=False):
                     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.15f}'.format(
                         epoch, batch_idx * len(data), len(train_loader.dataset),
                         100. * batch_idx / len(train_loader), loss.item()))
+                    print("torch.cuda.memory_allocated: %fGB"%(torch.cuda.memory_allocated()/1024/1024/1024))
+                    print("torch.cuda.memory_cached: %fGB"%(torch.cuda.memory_cached()/1024/1024/1024))
 
                 else:
                     print('Test  Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.15f}'.format(

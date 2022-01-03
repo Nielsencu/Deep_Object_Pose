@@ -687,6 +687,8 @@ for epoch in range(1, opt.epochs + 1):
         if opt.local_rank == 0:
             if not opt.dontsave is True:
                 torch.save(net.state_dict(), f'{opt.outf}/net_{opt.namefile}_{str(epoch).zfill(2)}.pth')
+                print("torch.cuda.memory_allocated: %fGB"%(torch.cuda.memory_allocated()/1024/1024/1024))
+                print("torch.cuda.memory_cached: %fGB"%(torch.cuda.memory_cached()/1024/1024/1024))
                 # Save to checkpoint
                 if opt.checkpt:
                     torch.save(net.state_dict(), f'{opt.checkpt}/net_{opt.namefile}_{str(epoch).zfill(2)}.pth')

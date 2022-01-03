@@ -1,5 +1,5 @@
 # The name of our algorithm
-algorithm_name=sagemaker-pytorch-dope-fourgpus
+algorithm_name=sagemaker-pytorch-dope-eightgpus
 
 #chmod +x cifar10/train
 #chmod +x cifar10/serve
@@ -28,7 +28,7 @@ docker login -u AWS -p $(aws ecr get-login-password --region ${region}) 97184330
 # Build the docker image locally with the image name and then push it to ECR
 # with the full name.
 
-#docker build  -t ${algorithm_name} -f Dockerfile.multigpusage .
-#docker tag ${algorithm_name} ${fullname}
+docker build  -t ${algorithm_name} -f Dockerfile.multigpusage .
+docker tag ${algorithm_name} ${fullname}
 
 docker push ${fullname}
