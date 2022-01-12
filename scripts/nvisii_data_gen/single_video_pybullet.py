@@ -160,11 +160,11 @@ outp = './output/'
 if opt.sage:
     outp = "/opt/ml/input/data/channel1"
     print(f"Output folder {outp}")
-    if os.path.isdir(f'/opt/ml/checkpoints/{opt.outf}/'):
-        print(f"Folder /opt/ml/checkpoints/{opt.outf}/ exists")
+    if os.path.isdir(f'/opt/ml/checkpoints/{opt.outf}_{opt.spp}/'):
+        print(f"Folder /opt/ml/checkpoints/{opt.outf}_{opt.spp}/ exists")
     else:
-        os.makedirs(f'/opt/ml/checkpoints/{opt.outf}/')
-        print(f'Created checkpoint folder /opt/ml/checkpoints/{opt.outf}/')
+        os.makedirs(f'/opt/ml/checkpoints/{opt.outf}_{opt.spp}/')
+        print(f'Created checkpoint folder /opt/ml/checkpoints/{opt.outf}_{opt.spp}/')
 
 if os.path.isdir(outp):
     print(f'folder {outp}/ exists')
@@ -270,7 +270,7 @@ else:
 visii_pybullet = []
 names_to_export = []
 
-def adding_mesh_object(name, obj_to_load,texture_to_load,scale=1):
+def adding_mesh_object(name, obj_to_load,texture_to_load,scale=1,z_range=[0.1,1], randomize=False):
     global mesh_loaded, visii_pybullet, names_to_export
     # obj_to_load = toy_to_load + "/meshes/model.obj"
     # texture_to_load = toy_to_load + "/materials/textures/texture.png"
@@ -296,13 +296,44 @@ def adding_mesh_object(name, obj_to_load,texture_to_load,scale=1):
     toy.get_material().set_roughness(random.uniform(0.1,0.5))
 
     toy.get_transform().set_scale(visii.vec3(scale))
+    z = random.uniform(z_range[0], z_range[1])
+    #z = 0.1
+    x,y=0,0
+    if randomize:
+        x = random.uniform(-1,1)
+        y = random.uniform(-1,1)
+    else:
+        x = random.uniform(-0.3,0.3)
+        y = random.uniform(-0.3,0.3)
+
+    position = [
+        0, # X Depth
+        0,# Y 
+        0 # Z
+    ]
+    # Scale the position based on depth into image to make sure it remains in frame
+    #position[1] *= position[0]
+    #position[2] *= position[0]
+
+    # # create random rotation while making usre the entity is facing forward in each frame
+    # rot = [
+    #     random.uniform(-10, 10), # Roll
+    #     random.uniform(-15, 15), # Pitch
+    #     random.uniform(-45, 45) # Yaw
+    # ]
+    # q = Quaternion.from_euler(rot[0], rot[1], rot[2], degrees=True)
+
+    #print(z,x,y)
     toy.get_transform().set_position(
         visii.vec3(
-            random.uniform(2,3),
-            random.uniform(-1,1),
-            random.uniform(-1,1),
+            position[0],
+            position[1],
+            position[2],
             )
         )
+        
+    print(position[0], position[1], position[2])
+
     toy.get_transform().set_rotation(
         visii.quat(
             random.uniform(0, 1),
@@ -324,17 +355,17 @@ def adding_mesh_object(name, obj_to_load,texture_to_load,scale=1):
     gemPos, gemOrn = p.getBasePositionAndOrientation(id_pybullet)
     force_rand = 10
     object_position = 0.01
-    p.applyExternalForce(
-        id_pybullet,
-        -1,
-        [   random.uniform(-force_rand,force_rand),
-            random.uniform(-force_rand,force_rand),
-            random.uniform(-force_rand,force_rand)],
-        [   random.uniform(-object_position,object_position),
-            random.uniform(-object_position,object_position),
-            random.uniform(-object_position,object_position)],
-        flags=p.WORLD_FRAME
-    )
+    # p.applyExternalForce(
+    #     id_pybullet,
+    #     -1,
+    #     [   random.uniform(-force_rand,force_rand),
+    #         random.uniform(-force_rand,force_rand),
+    #         random.uniform(-force_rand,force_rand)],
+    #     [   random.uniform(-object_position,object_position),
+    #         random.uniform(-object_position,object_position),
+    #         random.uniform(-object_position,object_position)],
+    #     flags=p.WORLD_FRAME
+    # )
     names_to_export.append(name)
 
     cuboid = add_cuboid(name, debug=False)
@@ -349,7 +380,7 @@ for i_obj in range(int(opt.nb_distractors)):
     texture_to_load = toy_to_load + "/materials/textures/texture.png"
     name = "google_"+toy_to_load.split('/')[-2] + f"_{i_obj}"
 
-    adding_mesh_object(name,obj_to_load,texture_to_load)
+    adding_mesh_object(name,obj_to_load,texture_to_load,z_range=[1.5,2], randomize=True)
 
 
 google_content_folder = glob.glob(opt.objs_folder + "Artec/Artec")

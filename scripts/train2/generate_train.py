@@ -200,6 +200,8 @@ num_loop = imgs // int(opt.nb_frames) # num of images = num_loop * nb_frames
 
 print(f"Number of loops {num_loop}")
 
+start = time.time()
+
 # Synthetic data generation
 if opt.generator:
     for i in range(0,num_loop):
@@ -231,8 +233,12 @@ if opt.generator:
         subprocess.call(to_call)
 else:
     print("Skipping synthetic data generation")
+
+print(f'Image generation took {time.time() - start} seconds')
     
 print("Commence training ---------------------------------------------------------------------------------------------------")
+
+start = time.time()
 
 if opt.keypoints:
     opt.keypoints = eval(opt.keypoints)
@@ -703,4 +709,6 @@ for epoch in range(1, opt.epochs + 1):
 if opt.local_rank == 0:
     torch.save(net.state_dict(), f'{opt.outf}/net_{opt.namefile}_{str(epoch).zfill(2)}.pth')
 print ("end:" , datetime.datetime.now().time())
+
+print(f'Training took {time.time() - start} seconds')
 

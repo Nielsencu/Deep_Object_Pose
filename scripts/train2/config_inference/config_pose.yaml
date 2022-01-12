@@ -19,8 +19,11 @@ weights: {
     # 'pudding':"weights_dope/dope_network/net_epoch_60.pth",
     #'alphabet_soup':"weights_dope/resnet_simple/alphabe_soup.pth",
     #'listerine' : "../../weights/listerine_20000_epoch_30.pth",
-    'listerine' : "../../weights/net_epoch_60.pth",
-    #'bluebabywipes' : "../../weights/bluebabywipes_20000_epoch_40.pth"
+    #'listerine' : "../../weights/net_epoch_60.pth",
+    #'listerine' : "../../weights/listerine_epoch_60.pth",
+    #'bluebabywipes' : "../../weights/bluebabywipes_20000_epoch_40.pth",
+    'aveeno' : '../../weights/aveeno_epoch_32.pth',
+    #'bactidol' : '../../weights/bactidol_epoch_11.pth',
 }
 
 # Type of neural network architecture
@@ -30,6 +33,8 @@ architectures: {
     'alphabet_soup':'resnet_simple',   
     'listerine' : 'dope',
     'bluebabywipes' : 'dope',
+    'aveeno' : 'dope',
+    'bactidol' : 'dope',
 }
 
 
@@ -48,6 +53,8 @@ dimensions: {
     'alphabet_soup':[8.3555002212524414, 7.1121001243591309, 6.6055998802185059],
     'listerine' : [26.7, 6.86, 11.2],
     'bluebabywipes' : [6.75, 11.8, 22.6],
+    'aveeno' : [16, 7.56, 4.88],
+    'bactidol' : [14.2, 6.25, 6.33],
 }
 
 class_ids: {
@@ -64,6 +71,8 @@ class_ids: {
     'alphabet_soup': 12,
     'listerine' : 13,
     'bluebabywipes' : 14,
+    'aveeno' : 15,
+    'bactidol' : 16,
 }
 
 draw_colors: {
@@ -79,6 +88,8 @@ draw_colors: {
     "pudding": [255,0,0],
     "listerine": [233,222,12],
     "bluebabywipes": [255, 0, 0],
+    "aveeno": [255, 0, 0],
+    "bactidol": [255, 0, 0],
 }
 
 # optional: provide a transform that is applied to the pose returned by DOPE
@@ -113,6 +124,7 @@ mesh_scales: {
     "bleach":  0.01,
     "listerine" : 0.01,
     "bluebabywipes" : 0.01,
+    "aveeno" : 0.01,
 }
 
 # Config params for DOPE

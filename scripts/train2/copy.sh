@@ -1,2 +1,4 @@
 sudo cp ../hyperparameters.json /opt/ml/input/config/
-python -m torch.distributed.launch --nproc_per_node=1 generate_train.py train
+sudo cp ../hyperparameters_withoutgen.json /opt/ml/input/config/
+torchrun train.py train
+

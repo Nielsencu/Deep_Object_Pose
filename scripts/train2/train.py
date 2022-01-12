@@ -32,6 +32,7 @@ from torch.autograd import Variable
 import torchvision.models as models
 import datetime
 import json
+import time
 
 from tensorboardX import SummaryWriter
 
@@ -67,6 +68,8 @@ torch.backends.cudnn.benchmark = True
 
 import random 
 import subprocess
+
+start = time.time()
 
 print ("start:" , datetime.datetime.now().time())
 
@@ -266,25 +269,28 @@ if opt.debug:
         pass
 
 
-with open (opt.outf+'/header.txt','w') as file: 
-    file.write(str(opt)+"\n")
+#with open (opt.outf+'/header.txt','w') as file: 
+#    file.write(str(opt)+"\n")
 
 if opt.manualseed is None:
     opt.manualseed = random.randint(1, 10000)
 
-with open (opt.outf+'/header.txt','w') as file: 
-    file.write(str(opt))
-    file.write("seed: "+ str(opt.manualseed)+'\n')
-with open (opt.outf+'/test_metric.csv','w') as file:
-    file.write("epoch, passed, total \n")
+#with open (opt.outf+'/header.txt','w') as file: 
+#    file.write(str(opt))
+#    file.write("seed: "+ str(opt.manualseed)+'\n')
+#with open (opt.outf+'/test_metric.csv','w') as file:
+#    file.write("epoch, passed, total \n")
 
 
 # Data check from args
 # if opt.testbatchsize > 1:
 #     print ('ERROR: test batchsize has to be one')
 #     opt.testbatchsize = 1 
+
+opt.local_rank = int(os.environ["LOCAL_RANK"])
+
 if opt.local_rank == 0:
-    writer = SummaryWriter(opt.outf+"/runs/")
+    writer = SummaryWriter(opt.checkpt+"/runs/")
 
 random.seed(opt.manualseed)
 
@@ -667,4 +673,6 @@ for epoch in range(1, opt.epochs + 1):
 if opt.local_rank == 0:
     torch.save(net.state_dict(), f'{opt.outf}/net_{opt.namefile}_{str(epoch).zfill(2)}.pth')
 print ("end:" , datetime.datetime.now().time())
+
+print(f'Training took {time.time() - start} seconds')
 

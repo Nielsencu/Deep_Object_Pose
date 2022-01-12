@@ -1,5 +1,5 @@
 # The name of our algorithm
-algorithm_name=sagemaker-pytorch-dope-eightgpus
+algorithm_name=sagemaker-pytorch-dope-singlegpu
 
 #chmod +x cifar10/train
 #chmod +x cifar10/serve
@@ -9,7 +9,7 @@ account=$(aws sts get-caller-identity --query Account --output text)
 # Get the region defined in the current configuration (default to us-west-2 if none defined)
 region=${region:-ap-southeast-1}
 
-fullname="${account}.dkr.ecr.${region}.amazonaws.com/${algorithm_name}:v0.0.1"
+fullname="${account}.dkr.ecr.${region}.amazonaws.com/${algorithm_name}:v0.0.2"
 
 # If the repository doesn't exist in ECR, create it.
 
