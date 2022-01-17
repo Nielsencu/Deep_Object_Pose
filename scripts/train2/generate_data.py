@@ -47,6 +47,7 @@ opt = parser.parse_args(remaining_argv)
 
 
 hyperparameters_file = "/opt/ml/input/config/hyperparameters.json"
+#hyperparameters_file = "../hyperparameters_generate.json"
 # hyperparameters
 with open(hyperparameters_file) as f:
    hyperparameters = json.load(f)
@@ -55,6 +56,8 @@ imgs = int(hyperparameters["imgs"])
 opt.spp = hyperparameters["spp"]
 opt.sage = int(hyperparameters["sage"])
 opt.nb_frames = hyperparameters["nb_frames"]
+opt.nb_objects = hyperparameters["nb_objects"]
+opt.nb_distractors = hyperparameters["nb_distractors"]
 opt.generate_only = int(hyperparameters["generate_only"])
 opt.generator = int(hyperparameters["generator"])
 
@@ -63,20 +66,28 @@ print(f"Generating {obj} with {imgs} images with {opt.spp} spp")
 if opt.sage:
     print(f"Using sagemaker directories --------------------------------------------------------------------------")
     opt.data = ["/opt/ml/input/data/channel1"]
-    opt.outf = "/opt/ml/model"
     opt.checkpt = "/opt/ml/checkpoints"
     data_gen_root = "/workspace/dope/scripts/nvisii_data_gen"
 else:
     print(f"Using local directories --------------------------------------------------------------------------")
     # Use default
-    opt.data = opt.data
-    opt.outf = opt.outf
+    opt.data = './output'
     opt.checkpt = ''
     data_gen_root = "../nvisii_data_gen"
 
 num_loop = imgs // int(opt.nb_frames) # num of images = num_loop * nb_frames
 
 print(f"Number of loops {num_loop}")
+
+is_range_nb_objects = False
+is_range_nb_distractors = False
+if len(opt.nb_objects) > 1:
+    is_range_nb_objects = True
+    opt.nb_objects = opt.nb_objects.split(",")
+
+if len(opt.nb_distractors) > 1:
+    is_range_nb_distractors = True
+    opt.nb_distractors = opt.nb_distractors.split(",")
 
 # Synthetic data generation
 if opt.generator:
@@ -85,12 +96,21 @@ if opt.generator:
             "python",f'{data_gen_root}/single_video_pybullet.py',
             '--spp',f'{opt.spp}',
             '--nb_frames', f'{opt.nb_frames}',
-            '--nb_objects',str(int(random.uniform(50,75))),
-            '--nb_distractors',str(int(random.uniform(20,30))),
             '--static_camera',
             '--outf',f"dataset/{str(i).zfill(3)}",
-            '--obj', f'{obj}'
+            '--obj', f'{obj}',
         ]
+        to_call.append('--nb_objects')
+        if is_range_nb_objects:
+            to_call.append(f'{int(random.uniform(int(opt.nb_objects[0]), int(opt.nb_objects[1])))}')
+        else:
+            to_call.append(f'{opt.nb_objects}')
+        to_call.append('--nb_distractors')
+        if is_range_nb_distractors:
+            to_call.append(str(int(random.uniform(int(opt.nb_distractors[0]), int(opt.nb_distractors[1])))))
+        else:
+            to_call.append(f'{opt.nb_distractors}')
+        
         if opt.sage:
             to_call.append("--sage")
             datagen_folder = "/opt/ml/input/data/datagen"

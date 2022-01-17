@@ -186,7 +186,13 @@ class DopeNode(object):
         scaling_factor = float(self.downscale_height) / height
         if scaling_factor < 1.0:
             camera_matrix[:2] *= scaling_factor
-            img = cv2.resize(img, (int(scaling_factor * width), int(scaling_factor * height)))
+            
+            w = 500
+            h = 500
+            x = img.shape[1]/2 - w/2
+            y = img.shape[0]/2 - h/2
+
+            img = img[int(y):int(y+h), int(x):int(x+w)]
 
         for m in self.models:
             self.pnp_solvers[m].set_camera_intrinsic_matrix(camera_matrix)
@@ -197,6 +203,9 @@ class DopeNode(object):
         im = Image.fromarray(img_copy)
         draw = Draw(im)
 
+        # if showVideo:
+        #     cv2.imshow('fed in', cv2.cvtColor(img,cv2.COLOR_RGB2BGR))
+        #     cv2.waitKey(1)
 
         # dictionary for the final output
         dict_out = {"camera_data":{},"objects":[]}
@@ -209,7 +218,7 @@ class DopeNode(object):
                 img,
                 self.config_detect
             )
-            # print(results)
+            print(beliefs)
             # print('---')
             # continue
             # Publish pose and overlay cube on image
@@ -311,6 +320,9 @@ if __name__ == "__main__":
     parser.add_argument('--save',
         action='store_true',
         help='save?')
+    parser.add_argument('--vid_path',
+        default='./videos/babywipes_blue_frontback_1.mp4',
+        help='video path?')
 
 
     opt = parser.parse_args()
@@ -334,7 +346,7 @@ if __name__ == "__main__":
         # Start streaming
         profile = pipeline.start(config)
 
-        vid_writer = cv2.VideoWriter('./output/vid1.mp4', cv2.VideoWriter_fourcc(*"mp4v"), 5, (640,480))
+    vid_writer = cv2.VideoWriter('./output/vid1.mp4', cv2.VideoWriter_fourcc(*"mp4v"), 5, (640,480))
 
 
     # create the output folder
@@ -361,8 +373,11 @@ if __name__ == "__main__":
             imgsname.append(j.replace(videopath,"").replace("/",""))
     else:
         if not opt.realsense:
-            cap = cv2.VideoCapture(0)
-
+            if not opt.vid_path:
+                cap = cv2.VideoCapture(0)
+            else:
+                cap = cv2.VideoCapture(opt.vid_path)
+        
     # An object to run dope node
     dope_node = DopeNode(pose_config)
 
@@ -399,6 +414,9 @@ if __name__ == "__main__":
 
         frame = frame[...,::-1].copy()
         
+        if not opt.realsense:
+            camera_info = rs_camera_info
+
         # call the inference node
         start = time.time()
         dope_node.image_callback(
