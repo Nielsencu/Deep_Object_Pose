@@ -9,6 +9,7 @@
     "generator" : "1",
     "nb_frames" : "100",
     "optimizer" : "adam",
-    "batch_size" : "32",
+    "batch_size" : "128",
+    "subbatch_size" : "32",
     "workers" : "8"
 }
