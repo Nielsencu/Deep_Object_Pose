@@ -73,4 +73,4 @@ ENV TERM=xterm
 ENV QT_X11_NO_MITSHM 1
 
 # Specify train.py parameters
-ENTRYPOINT ["python", "-m", "torch.distributed.launch", "--nproc_per_node=1" , "/opt/ml/code/train.py"]
+ENTRYPOINT ["torchrun", "--nproc_per_node=1", "--nnodes=1", "/opt/ml/code/train.py"]
