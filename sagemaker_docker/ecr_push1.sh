@@ -9,7 +9,7 @@ account=$(aws sts get-caller-identity --query Account --output text)
 # Get the region defined in the current configuration (default to us-west-2 if none defined)
 region=${region:-ap-southeast-1}
 
-fullname="${account}.dkr.ecr.${region}.amazonaws.com/${algorithm_name}:v0.0.2"
+fullname="${account}.dkr.ecr.${region}.amazonaws.com/${algorithm_name}:v0.0.3"
 
 # If the repository doesn't exist in ECR, create it.
 
@@ -28,7 +28,7 @@ docker login -u AWS -p $(aws ecr get-login-password --region ${region}) 97184330
 # Build the docker image locally with the image name and then push it to ECR
 # with the full name.
 
-docker build  -t ${algorithm_name} -f Dockerfile.multigpusage .
+docker build  -t ${algorithm_name} -f Dockerfile.sage .
 docker tag ${algorithm_name} ${fullname}
 
 docker push ${fullname}

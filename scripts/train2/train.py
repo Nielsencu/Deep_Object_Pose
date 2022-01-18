@@ -297,7 +297,10 @@ random.seed(opt.manualseed)
 print(f"Local rank {opt.local_rank}")
 torch.cuda.set_device(opt.local_rank)
 torch.distributed.init_process_group(backend='NCCL',
-                                     init_method='env://')
+                                     init_method='env://',
+                                     rank = opt.local_rank,
+                                     world_size=4,
+                                    )
 
 torch.manual_seed(opt.manualseed)
 
@@ -377,13 +380,18 @@ if not opt.data == "":
         output_size = output_size,
         objects = opt.objects
         )
-    trainingdata = torch.utils.data.DataLoader(train_dataset,
-        batch_size = opt.batchsize, 
-        shuffle = True,
-        num_workers = opt.workers, 
-        pin_memory = True
-        )
 
+    world_size = 4 # Training with single node 4 GPU machine
+    train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, num_replicas=world_size, rank=opt.local_rank)
+
+    trainingdata = torch.utils.data.DataLoader(
+        dataset=train_dataset,
+        batch_size = opt.batchsize, 
+        shuffle = (train_sampler is None),
+        num_workers = opt.workers, 
+        pin_memory = True,
+        sampler = train_sampler
+        )
 
 if not trainingdata is None:
     print('training data: {} batches'.format(len(trainingdata)))
@@ -460,74 +468,77 @@ def _runnetwork(epoch,train_loader,train=True,syn=False):
     loss_avg_to_log['loss'] = []
     loss_avg_to_log['loss_affinities'] = []
     loss_avg_to_log['loss_belief'] = []
-    loss_avg_to_log['loss_class'] = []
+    #loss_avg_to_log['loss_class'] = []
     for batch_idx, targets in enumerate(train_loader):
         optimizer.zero_grad()
         logged = 0
 
         data = Variable(targets['img'].cuda())
-        target_belief = Variable(targets['beliefs'].cuda())        
-        target_affinities = Variable(targets['affinities'].cuda())
-        
-        # target_segmentation = Variable(targets['segmentation'].cuda())
-        
-        # target_affinity_map = Variable(targets['affinity_map'][:,2,:,:]).cuda()
-        # print(target_belief.min(),target_belief.max())
-        # print(target_affinities.min(),target_affinities.max())
-        # print(target_classification.min(),target_classification.max())
 
+        with torch.cuda.amp.autocast():
+            output_belief, output_aff = net(data)
 
-        # print (f'data: {data.shape}')        
-        # print (f'target_belief: {target_belief.shape}')        
-        # print (f'target_affinities: {target_affinities.shape}')        
-        # print (f'target_segmentation: {target_segmentation.shape}')        
-        output_belief, output_aff = net(data)
-        
-        loss = None
-        
-        # print(f'len: {len(output_net)}')
-        # print(f'1: {output_net[0][0].shape}')
-        # print(f'2: {output_net[0][1].shape}')
-        # print(f'3: {output_net[0][2].shape}')
-        # len: 2
-        # 1: torch.Size([4, 9, 100, 100])
-        # 2: torch.Size([4, 16, 100, 100])
-        # 3: torch.Size([4, 21, 100, 100])
-
-        # raise()
-
-        loss_belief = torch.tensor(0).float().cuda() 
-        loss_affinities = torch.tensor(0).float().cuda()
-        loss_class = torch.tensor(0).float().cuda()
-        # loss_segmentation = torch.tensor(0).float().cuda()
-
-        for stage in range(len(output_aff)): #output, each belief map layers. 
-            # print(stage[0].shape)
-            # print(target_affinity_map.shape)
-            # raise()
-            # loss_tmp = (( - target_affinity_map) * (stage[0]-target_affinity_map)).mean()/opt.batchsize
-
-
-
-            loss_affinities += ((output_aff[stage] - target_affinities)*(output_aff[stage] - target_affinities)).mean()/opt.batchsize
+            target_belief = Variable(targets['beliefs'].cuda())        
+            target_affinities = Variable(targets['affinities'].cuda())
             
-            # print(output_belief[stage].shape)
-            # print(target_belief.shape)
+            # target_segmentation = Variable(targets['segmentation'].cuda())
+            
+            # target_affinity_map = Variable(targets['affinity_map'][:,2,:,:]).cuda()
+            # print(target_belief.min(),target_belief.max())
+            # print(target_affinities.min(),target_affinities.max())
+            # print(target_classification.min(),target_classification.max())
 
-            loss_belief += ((output_belief[stage] - target_belief)*(output_belief[stage] - target_belief)).mean()/opt.batchsize
 
-            # loss_tmp = ((stage[1] - target_affinities) * (stage[1]-target_affinities)).mean()/opt.batchsize
-            # loss_affinities += loss_tmp 
+            # print (f'data: {data.shape}')        
+            # print (f'target_belief: {target_belief.shape}')        
+            # print (f'target_affinities: {target_affinities.shape}')        
+            # print (f'target_segmentation: {target_segmentation.shape}')        
+            
+            loss = None
+        
+            # print(f'len: {len(output_net)}')
+            # print(f'1: {output_net[0][0].shape}')
+            # print(f'2: {output_net[0][1].shape}')
+            # print(f'3: {output_net[0][2].shape}')
+            # len: 2
+            # 1: torch.Size([4, 9, 100, 100])
+            # 2: torch.Size([4, 16, 100, 100])
+            # 3: torch.Size([4, 21, 100, 100])
 
-            # loss_tmp = ((stage[2] - target_segmentation) * (stage[2]-target_segmentation)).mean()/opt.batchsize
-            # loss_segmentation += loss_tmp
+            # raise()
 
-        # loss = loss_belief + loss_affinities * 0.9 + loss_segmentation * 0.00001
+            loss_belief = torch.tensor(0).float().cuda() 
+            loss_affinities = torch.tensor(0).float().cuda()
+            #loss_class = torch.tensor(0).float().cuda()
+            # loss_segmentation = torch.tensor(0).float().cuda()
 
-        # compute classification loss 
-        # loss_class = ((target_classification.flatten(1) - output_classification) * (target_classification.flatten(1) - output_classification)).mean()/opt.batchsize
-        # print(loss_class.item(),loss_belief.item(),loss_affinities.item() )
-        loss = loss_affinities + loss_belief
+            for stage in range(len(output_aff)): #output, each belief map layers. 
+                # print(stage[0].shape)
+                # print(target_affinity_map.shape)
+                # raise()
+                # loss_tmp = (( - target_affinity_map) * (stage[0]-target_affinity_map)).mean()/opt.batchsize
+
+
+
+                loss_affinities += ((output_aff[stage] - target_affinities)*(output_aff[stage] - target_affinities)).mean()/opt.batchsize
+                
+                # print(output_belief[stage].shape)
+                # print(target_belief.shape)
+
+                loss_belief += ((output_belief[stage] - target_belief)*(output_belief[stage] - target_belief)).mean()/opt.batchsize
+
+                # loss_tmp = ((stage[1] - target_affinities) * (stage[1]-target_affinities)).mean()/opt.batchsize
+                # loss_affinities += loss_tmp 
+
+                # loss_tmp = ((stage[2] - target_segmentation) * (stage[2]-target_segmentation)).mean()/opt.batchsize
+                # loss_segmentation += loss_tmp
+
+                # loss = loss_belief + loss_affinities * 0.9 + loss_segmentation * 0.00001
+
+                # compute classification loss 
+                # loss_class = ((target_classification.flatten(1) - output_classification) * (target_classification.flatten(1) - output_classification)).mean()/opt.batchsize
+                # print(loss_class.item(),loss_belief.item(),loss_affinities.item() )
+                loss = loss_affinities + loss_belief
 
         #save one output of the network and one gt
         # if False : 
@@ -582,17 +593,17 @@ def _runnetwork(epoch,train_loader,train=True,syn=False):
 
 
         if train:
-            # optimizer.zero_grad()
+            optimizer.zero_grad()
             # for param in net.parameters():
                 # param.grad = None
 
-            loss.backward()
-            # scaler.scale(loss).backward() 
+            #loss.backward()
+            scaler.scale(loss).backward() 
                 
-            optimizer.step()
-            # scaler.step(optimizer)
+            #optimizer.step()
+            scaler.step(optimizer)
 
-            # scaler.update()
+            scaler.update()
             nb_update_network+=1
             
             
@@ -604,7 +615,7 @@ def _runnetwork(epoch,train_loader,train=True,syn=False):
         
         # log the loss
         loss_avg_to_log["loss"].append(loss.item())
-        loss_avg_to_log["loss_class"].append(loss_class.item())
+        #loss_avg_to_log["loss_class"].append(loss_class.item())
         loss_avg_to_log["loss_affinities"].append(loss_affinities.item())
         loss_avg_to_log["loss_belief"].append(loss_belief.item())
             
@@ -632,7 +643,7 @@ def _runnetwork(epoch,train_loader,train=True,syn=False):
 
         if train:
             writer.add_scalar('loss/train_loss',np.mean(loss_avg_to_log["loss"]),epoch)
-            writer.add_scalar('loss/train_cls',np.mean(loss_avg_to_log["loss_class"]),epoch)
+            #writer.add_scalar('loss/train_cls',np.mean(loss_avg_to_log["loss_class"]),epoch)
             writer.add_scalar('loss/train_aff',np.mean(loss_avg_to_log["loss_affinities"]),epoch)
             writer.add_scalar('loss/train_bel',np.mean(loss_avg_to_log["loss_belief"]),epoch)
         else:
@@ -640,13 +651,14 @@ def _runnetwork(epoch,train_loader,train=True,syn=False):
             # add the loss
 
             writer.add_scalar('loss/test_loss',np.mean(loss_avg_to_log["loss"]),epoch)
-            writer.add_scalar('loss/test_cls',np.mean(loss_avg_to_log["loss_class"]),epoch)
+            #writer.add_scalar('loss/test_cls',np.mean(loss_avg_to_log["loss_class"]),epoch)
             writer.add_scalar('loss/test_aff',np.mean(loss_avg_to_log["loss_affinities"]),epoch)
             writer.add_scalar('loss/test_bel',np.mean(loss_avg_to_log["loss_belief"]),epoch)
 
 for epoch in range(1, opt.epochs + 1):
 
     if not trainingdata is None and not opt.testonly:
+        train_sampler.set_epoch(epoch)
         _runnetwork(epoch,trainingdata)
         if opt.optimizer == 'sgd':
             scheduler.step()
