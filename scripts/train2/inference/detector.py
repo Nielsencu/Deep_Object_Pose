@@ -398,7 +398,7 @@ class ObjectDetector(object):
 
     @staticmethod
     def detect_object_in_image(net_model, pnp_solver, in_img, config, 
-            grid_belief_debug = False, norm_belief=True):
+            grid_belief_debug = False, norm_belief=True, autocast=False):
         ''' Detect objects in a image using a specific trained network model
             Returns the poses of the objects and the belief maps
             '''
@@ -408,12 +408,18 @@ class ObjectDetector(object):
 
         # print("detect_object_in_image - image shape: {}".format(in_img.shape))
 
+
+
         # Run network inference
         image_tensor = transform(in_img)
         image_torch = Variable(image_tensor).cuda().unsqueeze(0)
-        out, seg = net_model(image_torch)  # run inference using the network (calls 'forward' method)
-        vertex2 = out[-1][0]
-        aff = seg[-1][0]
+        if autocast:
+            with torch.cuda.amp.autocast():
+                out, seg = net_model(image_torch)  # run inference using the network (calls 'forward' method)
+        else:
+            out, seg = net_model(image_torch)
+        vertex2 = out[-1][0].to(torch.float32)
+        aff = seg[-1][0].to(torch.float32)
 
         # Find objects from network output
         detected_objects = ObjectDetector.find_object_poses(vertex2, aff, pnp_solver, config)

@@ -23,6 +23,7 @@ sys.path.append("inference")
 from cuboid import Cuboid3d
 from cuboid_pnp_solver import CuboidPNPSolver
 from detector import ModelData, ObjectDetector
+import torch
 
 import simplejson as json
 
@@ -121,6 +122,7 @@ class DopeNode(object):
         self.config_detect.thresh_map = config['thresh_map']
         self.config_detect.sigma = config['sigma']
         self.config_detect.thresh_points = config["thresh_points"]
+        self.autocast = config["autocast"]
 
         # For each object to detect, load network model, create PNP solver, and start ROS publishers
         print(config['weights'])
@@ -186,7 +188,6 @@ class DopeNode(object):
         scaling_factor = float(self.downscale_height) / height
         if scaling_factor < 1.0:
             camera_matrix[:2] *= scaling_factor
-            
             w = 500
             h = 500
             x = img.shape[1]/2 - w/2
@@ -212,13 +213,16 @@ class DopeNode(object):
 
         for m in self.models:
             # Detect object
+            
             results, beliefs = ObjectDetector.detect_object_in_image(
                 self.models[m].net,
                 self.pnp_solvers[m],
                 img,
-                self.config_detect
+                self.config_detect,
+                autocast = self.autocast
             )
-            print(beliefs)
+            
+            print("objects found: {}".format(results))
             # print('---')
             # continue
             # Publish pose and overlay cube on image
@@ -271,6 +275,7 @@ class DopeNode(object):
             #    json.dump(dict_out, fp)
         
         if showVideo:
+            open_cv_image = cv2.resize(open_cv_image, dsize=(800, 800))
             cv2.imshow('Open_cv_image', open_cv_image)
             cv2.waitKey(1)
 
