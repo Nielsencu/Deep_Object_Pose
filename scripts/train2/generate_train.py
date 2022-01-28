@@ -32,6 +32,7 @@ from torch.autograd import Variable
 import torchvision.models as models
 import datetime
 import json
+import re
 
 from tensorboardX import SummaryWriter
 
@@ -465,9 +466,25 @@ net = torch.nn.parallel.DistributedDataParallel(net.cuda(),
     output_device=opt.local_rank)
 # print(net)
 
-if opt.net:
-    print("continue training on pretrained weight")
+start_epoch = 1
+
+# Checking for checkpoints
+files = [f for f in os.listdir(opt.checkpt) if f.endswith('.' + 'pth')]  
+if files:
+    epoch_numbers = [int(re.search('([0-9]*).pth',f).group(1)) for f in files]
+
+    max_epoch_number = max(epoch_numbers)
+    max_epoch_filename = 'net_epoch_' + str(max_epoch_number) + '.pth'
+
+    start_epoch = max_epoch_number + 1 # Set starting epoch as last epoch + 1
+
+    print("Resuming last checkpoint")
+    net.load_state_dict(torch.load(f'{opt.checkpt}/{max_epoch_filename}'))
+elif opt.net:
+    print("Fresh training")
     net.load_state_dict(torch.load(f'{opt.net}'))
+
+print(f"Starting from epoch {start_epoch}")
 
 parameters = filter(lambda p: p.requires_grad, net.parameters())
 optimizer = optim.Adam(parameters,lr=opt.lr)
@@ -711,7 +728,7 @@ def _runnetwork(epoch,train_loader,train=True,syn=False):
             writer.add_scalar('loss/test_aff',np.mean(loss_avg_to_log["loss_affinities"]),epoch)
             writer.add_scalar('loss/test_bel',np.mean(loss_avg_to_log["loss_belief"]),epoch)
 
-for epoch in range(1, opt.epochs + 1):
+for epoch in range(start_epoch, opt.epochs + 1):
 
     if not trainingdata is None and not opt.testonly:
         _runnetwork(epoch,trainingdata)

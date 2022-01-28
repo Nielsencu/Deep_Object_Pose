@@ -187,13 +187,8 @@ class DopeNode(object):
         height, width, _ = img.shape
         scaling_factor = float(self.downscale_height) / height
         if scaling_factor < 1.0:
+            img = cv2.resize(img, (int(scaling_factor * width), int(scaling_factor * height)))
             camera_matrix[:2] *= scaling_factor
-            w = 500
-            h = 500
-            x = img.shape[1]/2 - w/2
-            y = img.shape[0]/2 - h/2
-
-            img = img[int(y):int(y+h), int(x):int(x+w)]
 
         for m in self.models:
             self.pnp_solvers[m].set_camera_intrinsic_matrix(camera_matrix)
@@ -266,6 +261,12 @@ class DopeNode(object):
         open_cv_image = np.array(im)
         open_cv_image = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)
         # save the output of the image. 
+        
+        if showVideo:
+            open_cv_image = cv2.resize(open_cv_image, dsize=(800, 800))
+            cv2.imshow('Open_cv_image', open_cv_image)
+            cv2.waitKey(1)
+        
         if save:
             vid_writer.write(open_cv_image)
             print('saving frame')
@@ -273,11 +274,6 @@ class DopeNode(object):
             # save the json files 
             #with open(f"{output_folder}/{img_name.replace('png','json')}", 'w') as fp:  
             #    json.dump(dict_out, fp)
-        
-        if showVideo:
-            open_cv_image = cv2.resize(open_cv_image, dsize=(800, 800))
-            cv2.imshow('Open_cv_image', open_cv_image)
-            cv2.waitKey(1)
 
 def rotate_vector(vector, quaternion):
     q_conj = tf.transformations.quaternion_conjugate(quaternion)
@@ -351,7 +347,7 @@ if __name__ == "__main__":
         # Start streaming
         profile = pipeline.start(config)
 
-    vid_writer = cv2.VideoWriter('./output/vid1.mp4', cv2.VideoWriter_fourcc(*"mp4v"), 5, (640,480))
+    vid_writer = cv2.VideoWriter('./output/vid1.mp4', cv2.VideoWriter_fourcc(*"mp4v"), 5, (800,800))
 
 
     # create the output folder
@@ -436,5 +432,5 @@ if __name__ == "__main__":
 
         print(f'Time elapsed {elapsed}')
 
-    vid_writer.release()
+    #vid_writer.release()
         
