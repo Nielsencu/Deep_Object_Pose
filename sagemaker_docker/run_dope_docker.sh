@@ -28,7 +28,7 @@ DOPE_ID=`docker ps -aqf "name=^/${CONTAINER_NAME}$"`
 if [ -z "${DOPE_ID}" ]; then
     echo "Creating new DOPE docker container."
     xhost +local:root
-    nvidia-docker run --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 --gpus all -it --privileged --network=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw --env="DISPLAY" --name=${CONTAINER_NAME} nvidia-dope:test-sage2
+    nvidia-docker run --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 --gpus all -it --privileged --network=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw --env="DISPLAY" --name=${CONTAINER_NAME} nvidia-dope:noetic-v1 bash
 else
     echo "Found DOPE docker container: ${DOPE_ID}."
     # Check if the container is already running and start if necessary.
