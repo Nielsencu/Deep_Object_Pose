@@ -295,15 +295,6 @@ if __name__ == "__main__":
     import os 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pause",
-        default=0,
-        help='pause between images')
-    parser.add_argument("--showbelief",
-        action="store_true",
-        help='show the belief maps')
-    parser.add_argument("--dontshow",
-        action="store_true",
-        help='headless mode')
     parser.add_argument("--outf",
         default="out_experiment",
         help='where to store the output')
