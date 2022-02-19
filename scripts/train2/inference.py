@@ -157,11 +157,9 @@ class DopeNode(object):
     def image_callback(self, 
         img, 
         camera_info, 
-        vid_writer,
         img_name = "00000.png", # this is the name of the img file to save, it needs the .png at the end
         output_folder = 'out_inference', # folder where to put the output
-        save=False,
-        showVideo = True,
+        resize = True,
         ):
         img_name = str(img_name).zfill(5)
         """Image callback"""
@@ -183,16 +181,16 @@ class DopeNode(object):
             dist_coeffs = np.matrix(camera_info.D, dtype='float64')
             dist_coeffs.resize((len(camera_info.D), 1))
 
-        print(camera_matrix)
-
-        # Downscale image if necessary
-        height, width, _ = img.shape
-        scaling_factor = float(self.downscale_height) / height
-        if scaling_factor < 1.0:
-            img = cv2.resize(img, (int(scaling_factor * width), int(scaling_factor * height)))
-            camera_matrix[:2] *= scaling_factor
+        #print(camera_matrix)
+        if resize:
+            # Downscale image if necessary
+            height, width, _ = img.shape
+            scaling_factor = float(self.downscale_height) / height
+            if scaling_factor < 1.0:
+                img = cv2.resize(img, (int(scaling_factor * width), int(scaling_factor * height)))
+                camera_matrix[:2] *= scaling_factor
         
-        print(camera_matrix)
+        #print(camera_matrix)
 
         for m in self.models:
             self.pnp_solvers[m].set_camera_intrinsic_matrix(camera_matrix)
@@ -202,10 +200,6 @@ class DopeNode(object):
         img_copy = img.copy()
         im = Image.fromarray(img_copy)
         draw = Draw(im)
-
-        # if showVideo:
-        #     cv2.imshow('fed in', cv2.cvtColor(img,cv2.COLOR_RGB2BGR))
-        #     cv2.waitKey(1)
 
         # dictionary for the final output
         dict_out = {"camera_data":{},"objects":[]}
@@ -225,6 +219,7 @@ class DopeNode(object):
             # print('---')
             # continue
             # Publish pose and overlay cube on image
+            loc,ori,axis = None,None,None
             for i_r, result in enumerate(results):
                 if result["location"] is None:
                     continue
@@ -233,7 +228,7 @@ class DopeNode(object):
                 ori = result["quaternion"]
                 axis = result["axis"]
                 
-                print(loc)
+                #print(loc)
                 #print(ori)
 
                 dict_out['objects'].append({
@@ -264,20 +259,7 @@ class DopeNode(object):
 
         open_cv_image = np.array(im)
         open_cv_image = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)
-        # save the output of the image. 
-        
-        if showVideo:
-            open_cv_image = cv2.resize(open_cv_image, dsize=(800, 800))
-            cv2.imshow('Open_cv_image', open_cv_image)
-            cv2.waitKey(1)
-        
-        if save:
-            vid_writer.write(open_cv_image)
-            print('saving frame')
-            #im.save(f"{output_folder}/{img_name}.png")
-            # save the json files 
-            #with open(f"{output_folder}/{img_name.replace('png','json')}", 'w') as fp:  
-            #    json.dump(dict_out, fp)
+        return loc,ori,open_cv_image
 
 def rotate_vector(vector, quaternion):
     q_conj = tf.transformations.quaternion_conjugate(quaternion)
@@ -319,9 +301,6 @@ if __name__ == "__main__":
     parser.add_argument('--realsense',
         action='store_true',
         help='use the realsense camera')
-    parser.add_argument('--showvideo',
-        default=True,
-        help='do imshow')
     parser.add_argument('--save',
         action='store_true',
         help='save?')
@@ -423,15 +402,23 @@ if __name__ == "__main__":
 
         # call the inference node
         start = time.time()
-        dope_node.image_callback(
+        _,_,img = dope_node.image_callback(
             frame, 
             camera_info,
             img_name = img_name,
             output_folder = opt.outf,
-            save=opt.save,
-            showVideo = opt.showvideo,
-            vid_writer=vid_writer,)
+        )
+        # save the output of the image. 
+        
+        if opt.save:
+            vid_writer.write(img)
+            print('saving frame')
+            #im.save(f"{output_folder}/{img_name}.png")
+            # save the json files 
+            #with open(f"{output_folder}/{img_name.replace('png','json')}", 'w') as fp:  
+            #    json.dump(dict_out, fp)
         elapsed = time.time() - start
+
 
         print(f'Time elapsed {elapsed}')
 
