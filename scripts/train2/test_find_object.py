@@ -35,8 +35,12 @@ def main():
         coordinates, orientation, color_img, duration = find_object(frame, detector.camera_info, detector.dope_node,opt) # Uses dope inference
         if orientation is not None:
             orientation = euler_from_quaternion(orientation[0], orientation[1],orientation[2],orientation[3])
+<<<<<<< HEAD
         #print("coordinates:", coordinates)
         print("orientation:", orientation)
+=======
+        print("coordinates:", orientation)
+>>>>>>> 237555ad74e62e4c067e1839a553e3ac528905a6
         print(f'duration : {duration}')
 
         #vid_writer.write(color_img)
