@@ -23,7 +23,7 @@ weights: {
     #'listerine' : "../../weights/listerine_epoch_60.pth",
     'bluebabywipes' : "../../weights/bluebabywipes_20000_epoch_40.pth",
     #'bluebabywipes' : "../../weights/bluebabywipes_60.pth",
-    #'aveeno' : '../../weights/aveeno_epoch_32.pth',
+    #'aveeno' : '../../weights/aveeno_epoch_40.pth',
     #'bactidol' : '../../weights/bactidol_epoch_11.pth',
 }
 
