@@ -5,7 +5,6 @@ import math
 
 pick = 0
 
-
 def euler_from_quaternion(x, y, z, w):
     """
     Convert a quaternion into euler angles (roll, pitch, yaw)
@@ -35,12 +34,7 @@ def main():
         coordinates, orientation, color_img, duration = find_object(frame, detector.camera_info, detector.dope_node,opt) # Uses dope inference
         if orientation is not None:
             orientation = euler_from_quaternion(orientation[0], orientation[1],orientation[2],orientation[3])
-<<<<<<< HEAD
-        #print("coordinates:", coordinates)
-        print("orientation:", orientation)
-=======
         print("coordinates:", orientation)
->>>>>>> 237555ad74e62e4c067e1839a553e3ac528905a6
         print(f'duration : {duration}')
 
         #vid_writer.write(color_img)
@@ -49,7 +43,6 @@ def main():
 
 if __name__ == "__main__":
     #vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*"mp4v"), FPS, VIS_IMAGE_SIZE)
-
     print("hey")
     opt = lambda x : None
     opt.config = "config_inference/config_pose.yaml"
