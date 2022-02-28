@@ -9,20 +9,40 @@ Aveeno with 100 sample-per-pixel             |  Listerine with 2000 sample-per-p
 ![Aveeno 100 spp](doc/aveeno_100.png?raw=true "Aveeno 100 spp")  |  ![Listerine 2000 spp](doc/listerine_2000.png?raw=true "Listerine 2000 spp") | ![Babywipes with distractors](doc/babywipes_with_distractors.png?raw=true "Baby wipes with distractors")
 
 
-The dockerfile for image generation can be found in Dockerfile.datasage. This is the dockerfile that generates synthetic image generator docker image, which is available in AWS ECR. To run image generation with AWS Sagemaker (sample ), there are configurations for image generator:
-* spp:
-* nb_distractors:
-* nb_frames:
-* nb_objects:
-* obj:
+The dockerfile for image generation can be found in Dockerfile.datasage. This is the dockerfile that generates synthetic data generator docker image, which is available in AWS ECR. To run data generation with AWS Sagemaker (sample run), there are configurations for image/data generator:
+* spp: sampler-per-pixel determines your image resolution, higher spp results in a longer image generation time
+* nb_frames: number of frames for every scene generated, if nb_frames = 200, then for every new scene (new background and HDR) it will capture 200 images of that scene which has the same background, HDR, 3D objects and distractors. The higher nb_frames, the less training time because it uses the same scene and doesn't have to place new objects in the scene. Since forces and torques are applied to each 3D objects, each time frames are captured, different position/orientation of the 3D object will also be captured.
+* nb_distractors: number of distractors to be placed in the scene ([50,75] means it will generate 50-75 distractors every scene). The higher number of distractors, the longer it takes to load a new scene.
+* nb_objects: number of objects placed in the scene ([20,30] means it will generate 20-30 distractors every scene). The higher number of objects, the longer it takes to load a new scene.
+* obj: the name of your object (3D CAD model and its texture should be present in S3 bucket s3://jiazheng-hd/dope_datagen/models/obj/obj)
 
-There's an option to run image generation and training at the same time using the single GPU docker image
+The actual synthetic data generation is inside `scripts/nvisii_data_gen/single_video_pybullet.py`. To adjust the distance of the object relative to the camera, it can be done inside `single_video_pybullet.py`. The script `scripts/generate_data.py` will call `single_video_pyubllet.py` and also parse, and pass in the configurations above through a json file located in `/opt/ml/input/config/hyperparameters.json` when run in AWS Sagemaker.
+
+To see the random distractors that are used, it is located in s3://jiazheng-hd/dope_datagen/google_scanned_models. HDR lightings can also be found in s3://jiazheng-hd/dope_datagen/dome_hdri_haven/.
 
 ## Training
-Training of the model
+Model training can be done using either single GPU or multi-GPU in AWS Sagemaker.
+
+For single GPU training sample run refer to ([sample run](https://ap-southeast-1.console.aws.amazon.com/sagemaker/home?region=ap-southeast-1#/jobs/dope-training-singlegpu-48-batchsize-bluebabywipes-2)). The input data config consists of the weights folder, datagen folder, and channel1 folder which should point to the training data. Output data config folder will save all the training weights in .pth format. Some important hyperparameters include:
+
+* batch_size : Training batch size (set default to 48 as it is the highest you can go)
+* epochs : number of epochs to run (set default to 60 for training a new object)
+* generator : if set to 0, it will skip synthetic data generation and use the channel1 folder as the training data. If set to 1, it will generate synthetic data before the training and commence the training as soon as synthetic data generation completes.
+* gpus: 0 
+* imgs : you need to change this if you set generator to 1, as this specifies the number of images you want to generate for training
+* nb_frames : passed to synth data gen
+* net : if set to 0, it will use DOPE's pretrained weight, else put as weight file name e.g `net_epoch_60.pth` the weight should exist inside s3://jiazheng-hd/dope_models/.
+* obj : passed to synth data gen
+* optimizer : training optimizer (set default to adam)
+* sage : always set to 1 if trained on sagemaker else it will use local directories to find input data such as 3D models, weights, and so on
+* spp : passed to synth data gen
+* subbatch_size : if batch_size == subbatch_size, it will run normal mini-batch gradient descent, else e.g if batch size 128 and subbatch size is 32, it will process 4 subbatches, accumulate the gradients and update the network using the accumulated gradients. This is done so that higher effective batch size can be employed (refer to [this](https://github.com/NVlabs/Deep_Object_Pose/issues/155)). Apparently this makes the loss to converge faster, however, from my own testing, it doesn't seem to be the case and the loss seems to just fluctuate hence just use batch_size == subbatch_size. 
+* workers: number of Pytorch data loader workers. 8 for single GPU, 12 for multi GPU
 
 For a more complete explanation, original repo can be found [here](https://github.com/NVlabs/Deep_Object_Pose).
 
+## Scripts
+To build and push your desired docker image to AWS ECR, you can change your dockerfile name in `sagemaker_docker/ecr_push.sh` and also AWS login credentials. The script `sagemaker_docker/run_dope_docker.sh` also allows you to run the docker image locally if you wish to. It uses NVIDIA docker run commands so that it can run NVIDIA GPU-based applications seamlessly.
 ## Further improvements:
-- [ ] Currently, the synthetic data generation is done through NVISII Python Renderer. However, the data generation using NVISII takes a long time (50000 images takes 3 days).
-- [ ] 
+- [ ] Currently, the synthetic data generation is done through NVISII Python Renderer. However, the data generation using NVISII takes a long time. To generate 50000 images it takes 3 days with the following configurations: 100 spp
+- [ ] Expensive to run image generation in AWS Sagemaker
