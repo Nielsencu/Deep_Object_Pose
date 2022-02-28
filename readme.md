@@ -1,11 +1,13 @@
 # DOPE Repository
-This repository contains the complete DOPE scripts to generate synthetic data, train, and run inference. 
+This repository contains the complete DOPE scripts to generate synthetic data, train, and run inference.
 
 To see the current progress, you can find these two videos under the `doc/` folder:
 doc/current_progress.mp4 
 doc/pick_with_orientation.mp4
 
-For a more complete explanation, original repo can be found [here](https://github.com/NVlabs/Deep_Object_Pose) of how the sim-to-real learning and training works.
+For a more complete explanation, original repo can be found [here](https://github.com/NVlabs/Deep_Object_Pose), which contains the original paper and explains how the sim-to-real learning and training works.
+## Requirements
+If you use conda you can install from conda_requirements.txt, note that the pip_requirements.txt might not be complete as I had installed some of the requirements using conda. I have also upgraded the pytorch to 0.10.0 so if you are installing from NVIDIA Repo's requirements.txt, take note of this.
 
 ## Workflow
 1. Get 3D CAD model of your object from a 3D scanner as .obj file and its' texture as .png, check number of mesh triangles using blender, decimate to 15000 to avoid any errors in rendering.
@@ -65,6 +67,10 @@ You can also monitor the training loss of the algorithm in the view algorithm me
 
 ## Scripts
 To build and push your desired docker image to AWS ECR, you can change your dockerfile name in `sagemaker_docker/ecr_push.sh` and also AWS login credentials. The script `sagemaker_docker/run_dope_docker.sh` also allows you to run the docker image locally if you wish to. It uses NVIDIA docker run commands so that it can run NVIDIA GPU-based applications seamlessly.
+
+## Docker files
+I have several docker files, dockerfile.datasage is for imagegen docker image, dockerfile.multigpusage is for multigpu docker image, dockerfile.sage is for singlegpu docker image. You can trace each docker files to see which scripts are used as the entrypoint. Dockerfile.noetic is only used if you want to run inference using ROS, e.g if you want to test the image rectification.
+
 ## Further improvements / findings:
 - [ ] Currently, the synthetic data generation is done through NVISII Python Renderer. However, the data generation using NVISII takes a long time. To generate 50000 images it takes 3 days with the following configurations: 100 spp, 50-75 distractors, 20-30 objects, 200 nb_frames. The data generation time can be reduced further by reducing the amount of distractors and objects generated for each scene, but I have not experimented by how much it will affect the model accuracy. 100 spp and 200 nb_frames seems to be the most ideal and these two are the two configs that I had been experimenting with.
 - [ ] Expensive to run image generation in AWS Sagemaker. Might be better to run with unity.
