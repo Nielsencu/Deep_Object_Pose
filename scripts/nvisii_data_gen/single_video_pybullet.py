@@ -281,11 +281,11 @@ def generate(frame_ids):
 
         print("loading:",obj_to_load)
 
-        #if obj_to_load in mesh_loaded:
-        #    toy_mesh = mesh_loaded[obj_to_load] 
-        #else:
-        toy_mesh = visii.mesh.create_from_file(name,obj_to_load)
-        #    mesh_loaded[obj_to_load] = toy_mesh
+        if obj_to_load in mesh_loaded:
+            toy_mesh = mesh_loaded[obj_to_load] 
+        else:
+            toy_mesh = visii.mesh.create_from_file(name,obj_to_load)
+            mesh_loaded[obj_to_load] = toy_mesh
 
         toy = visii.entity.create(
             name = name,
@@ -343,17 +343,17 @@ def generate(frame_ids):
         gemPos, gemOrn = p.getBasePositionAndOrientation(id_pybullet)
         force_rand = 10
         object_position = 0.01
-        # p.applyExternalForce(
-        #     id_pybullet,
-        #     -1,
-        #     [   random.uniform(-force_rand,force_rand),
-        #         random.uniform(-force_rand,force_rand),
-        #         random.uniform(-force_rand,force_rand)],
-        #     [   random.uniform(-object_position,object_position),
-        #         random.uniform(-object_position,object_position),
-        #         random.uniform(-object_position,object_position)],
-        #     flags=p.WORLD_FRAME
-        # )
+        p.applyExternalForce(
+            id_pybullet,
+            -1,
+            [   random.uniform(-force_rand,force_rand),
+                random.uniform(-force_rand,force_rand),
+                random.uniform(-force_rand,force_rand)],
+            [   random.uniform(-object_position,object_position),
+                random.uniform(-object_position,object_position),
+                random.uniform(-object_position,object_position)],
+            flags=p.WORLD_FRAME
+        )
         names_to_export.append(name)
 
         cuboid = add_cuboid(name, debug=False)
@@ -473,8 +473,8 @@ def generate(frame_ids):
         i_frame += 1  
 
 
-        #if i_render >= int(opt.nb_frames) and not opt.interactive:
-            #condition = False
+        if i_render >= int(opt.nb_frames) and not opt.interactive:
+            condition = False
 
         # update the position from pybullet
         for i_entry, entry in enumerate(visii_pybullet):
@@ -598,14 +598,14 @@ def generate(frame_ids):
 
 # Start processes
 
-l = list(range(int(opt.nb_frames)))
-nb_process = 4 
+# l = list(range(int(opt.nb_frames)))
+# nb_process = 4 
 
-# How many frames each process should have 
-n = ceil(len(l) / nb_process)
+# # How many frames each process should have 
+# n = ceil(len(l) / nb_process)
 
-# divide frames between processes
-frame_groups = [l[i:i + n] for i in range(0, len(l), n)]
+# # divide frames between processes
+# frame_groups = [l[i:i + n] for i in range(0, len(l), n)]
 
-with Pool(nb_process) as p:
-    p.map(generate,frame_groups)
+# with Pool(nb_process) as p:
+#     p.map(generate,frame_groups)
