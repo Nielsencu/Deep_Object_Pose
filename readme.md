@@ -1,6 +1,10 @@
 # DOPE Repository
 This repository contains the complete DOPE scripts to generate synthetic data, train, and run inference. 
 
+Robot Picking             |  Robot picking with orientation
+:-------------------------:|:-------------------------:|:-------------------------:
+![Robot gripping](doc/current_progress.mp4?raw=true "Robot gripping")  |  ![Robot picking with orientation](doc/pick_with_orientation.mp4 "Robot picking with orientation") 
+
 ## Synthetic Data Generation
 To achieve sim-to-real learning, synthetic data generated is made to be as real as possible to mimic real-world inference. Firstly, it places distractors in the scene, which are 3D meshes of random objects placed randomly in the scene. Placing a bunch of random distractors teaches the model to learn to differentiate the object we are trying to train on and other "distractors" which can be random objects in the background when doing inference in the real world. Secondly, it uses HDR lighting to render images with realistic lighting. Thirdly, realistic random backgrounds will be overlayed for every scene generated.
 
