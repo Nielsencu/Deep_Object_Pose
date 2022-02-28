@@ -20,7 +20,9 @@ The actual synthetic data generation is inside `scripts/nvisii_data_gen/single_v
 
 To see the random distractors that are used, it is located in s3://jiazheng-hd/dope_datagen/google_scanned_models. HDR lightings can also be found in s3://jiazheng-hd/dope_datagen/dome_hdri_haven/.
 
-I have a separate 
+I have a separate synthetic data generator docker image that can be run on AWS Sagemaker. It uses a cheaper training instance ml.g4dn.2xlarge $1/hour. In AWS ECR, there are two synthetic data generator, one is imagegen-close and one is imagegen. The imagegen-close shouldn't be used as I used it to experiment whether if objects placed closer to camera would yield a better model accuracy. However, I found that placing objects closer to camera means that less objects can be viewed in a single image. On the other hand, placing objects further away from camera allows more objects to be viewed in a single image although the details might not be as clear as when it is closer to camera. My findings show that the 'far' model still outperforms the 'close' model as the 'close' model's accuracy was poorer although both had been trained on the same 20000 images (video can be found in AI slack channel).
+
+https://ap-southeast-1.console.aws.amazon.com/sagemaker/home?region=ap-southeast-1#/jobs/dope-imagegenclose-bluebabywipes
 
 ## Training
 Model training can be done using either single GPU or multi-GPU in AWS Sagemaker.
@@ -43,15 +45,16 @@ For single GPU training sample run refer to ([sample run](https://ap-southeast-1
 
 For multi GPU training sample run refer to ([sample run](https://ap-southeast-1.console.aws.amazon.com/sagemaker/home?region=ap-southeast-1#/jobs/dope-training-test-fourgpus-48-batchsize-listerine-1)). It isn't recommended to run synthetic data generation together with the multi GPU training because data generation isn't optimized with multi GPU and multi GPU instance is expensive so that's why I have an image generator that uses a cheap instance to perform image generation, and pass the S3 folder output of the image generation as channel1 input for multi GPU training. For multi GPU training, important hyperparameters that needs to be changed are epochs and net (optional ones include batch_size, subbatch_size, optimizer, workers).
 
-I have implemented training with checkpoints, so it can utilize AWS Spot instance training with 70% savings in training costs. You need to create new checkpoints S3 folder for every new training session and pass it as S3 output path in Checkpoint Configuration part in AWS Sagemaker. It will automatically upload latest training weights to the cloud.
+I have implemented training with checkpoints, so it can utilize AWS Spot instance training with 70% savings. You need to create new checkpoints S3 folder for every new training session and pass it as S3 output path in Checkpoint Configuration part in AWS Sagemaker. It will automatically upload latest training weights to the cloud.
 
-You can also monitor the training loss of the algorithm in the view algorithm metrics to see how your training performs. By 30 epochs, there should be a downward trend, otherwise if it is just fluctuating for 30 epochs, it might signal that the model isn't able to learn much.
+You can also monitor the training loss of the algorithm in the view algorithm metrics to see how your training performs. By 30 epochs, there should be a downward trend, otherwise if it is just fluctuating for 30 epochs, it might signal that the model isn't able to learn much and you can do early termination.
 
 For a more complete explanation, original repo can be found [here](https://github.com/NVlabs/Deep_Object_Pose) of how the training works.
 
 ## Scripts
 To build and push your desired docker image to AWS ECR, you can change your dockerfile name in `sagemaker_docker/ecr_push.sh` and also AWS login credentials. The script `sagemaker_docker/run_dope_docker.sh` also allows you to run the docker image locally if you wish to. It uses NVIDIA docker run commands so that it can run NVIDIA GPU-based applications seamlessly.
 ## Further improvements:
-- [ ] Currently, the synthetic data generation is done through NVISII Python Renderer. However, the data generation using NVISII takes a long time. To generate 50000 images it takes 3 days with the following configurations: 100 spp
-- [ ] Expensive to run image generation in AWS Sagemaker,
-- [ ] Haven't tested multi-GPU accuracy. However, benchmarking shows 3x boost in training time using four vs single GPU.
+- [ ] Currently, the synthetic data generation is done through NVISII Python Renderer. However, the data generation using NVISII takes a long time. To generate 50000 images it takes 3 days with the following configurations: 100 spp, 50-75 distractors, 20-30 objects, 200 nb_frames. It can be reduced further by reducing the amount of distractors and objects generated for each scene, but I have not experimented by how much it will affect the model accuracy. 100 spp and 200 nb_frames seems to be the most ideal and these two are the two configs that I had been experimenting with.
+- [ ] Expensive to run image generation in AWS Sagemaker. Might be better to run with unity.
+- [ ] Haven't tested multi-GPU's model accuracy. However, benchmarking shows 3x boost in training time using four vs single GPU.
+- [ ] 
