@@ -1,7 +1,6 @@
 weights/
 *.pyc
 *._
-*.png
 *.exr
 *.json
 *.pth
