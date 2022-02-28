@@ -71,6 +71,9 @@ To build and push your desired docker image to AWS ECR, you can change your dock
 ## Docker files
 I have several docker files, dockerfile.datasage is for imagegen docker image, dockerfile.multigpusage is for multigpu docker image, dockerfile.sage is for singlegpu docker image. You can trace each docker files to see which scripts are used as the entrypoint. Dockerfile.noetic is only used if you want to run inference using ROS, e.g if you want to test the image rectification.
 
+## Weights
+My trained Weights can be found in s3://jiazheng-hd/dope_models/.
+
 ## Further improvements / findings:
 - [ ] Currently, the synthetic data generation is done through NVISII Python Renderer. However, the data generation using NVISII takes a long time. To generate 50000 images it takes 3 days with the following configurations: 100 spp, 50-75 distractors, 20-30 objects, 200 nb_frames. The data generation time can be reduced further by reducing the amount of distractors and objects generated for each scene, but I have not experimented by how much it will affect the model accuracy. 100 spp and 200 nb_frames seems to be the most ideal and these two are the two configs that I had been experimenting with.
 - [ ] Expensive to run image generation in AWS Sagemaker. Might be better to run with unity.
