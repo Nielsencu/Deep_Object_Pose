@@ -152,8 +152,8 @@ parser.set_defaults(**defaults)
 parser.add_argument("--option")
 opt = parser.parse_args(remaining_argv)
 
-
 hyperparameters_file = "/opt/ml/input/config/hyperparameters.json"
+
 # hyperparameters
 with open(hyperparameters_file) as f:
    hyperparameters = json.load(f)
@@ -169,6 +169,7 @@ opt.optimizer = hyperparameters["optimizer"]
 opt.batchsize = int(hyperparameters["batch_size"])
 opt.subbatchsize = int(hyperparameters["subbatch_size"])
 opt.workers = int(hyperparameters["workers"])
+
 if opt.net == '0':
     opt.net = ''
 opt.generator = int(hyperparameters["generator"])
