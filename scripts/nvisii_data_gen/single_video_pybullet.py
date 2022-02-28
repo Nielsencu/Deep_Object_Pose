@@ -274,7 +274,7 @@ def generate(frame_ids):
     visii_pybullet = []
     names_to_export = []
 
-    def adding_mesh_object(name, obj_to_load,texture_to_load,scale=1,z_range=[0.1,1], randomize=False):
+    def adding_mesh_object(name, obj_to_load,texture_to_load,scale=1, close=False):
         global mesh_loaded, visii_pybullet, names_to_export
         # obj_to_load = toy_to_load + "/meshes/model.obj"
         # texture_to_load = toy_to_load + "/materials/textures/texture.png"
@@ -300,35 +300,27 @@ def generate(frame_ids):
         toy.get_material().set_roughness(random.uniform(0.1,0.5))
 
         toy.get_transform().set_scale(visii.vec3(scale))
-        z = random.uniform(z_range[0], z_range[1])
-        #z = 0.1
-        x,y=0,0
-        if randomize:
-            x = random.uniform(-1,1)
-            y = random.uniform(-1,1)
-        else:
+        # If generate objects close to the camera only translate in x,y and not z
+        if close: 
             x = random.uniform(-0.3,0.3)
             y = random.uniform(-0.3,0.3)
-
-        position = [
-            0, # X Depth
-            0,# Y 
-            0 # Z
-        ]
+            z = 0
+        else:
+            x = random.uniform(0.1,2)
+            y = random.uniform(-1,1)
+            z = random.uniform(-1,1)
         # Scale the position based on depth into image to make sure it remains in frame
-        #position[1] *= position[0]
-        #position[2] *= position[0]
+        #y *= x
+        #z *= x
 
         #print(z,x,y)
         toy.get_transform().set_position(
             visii.vec3(
-                position[0],
-                position[1],
-                position[2],
+                x,
+                y,
+                z,
                 )
             )
-            
-        print(position[0], position[1], position[2])
 
         toy.get_transform().set_rotation(
             visii.quat(
@@ -376,7 +368,7 @@ def generate(frame_ids):
         texture_to_load = toy_to_load + "/materials/textures/texture.png"
         name = "google_"+toy_to_load.split('/')[-2] + f"_{i_obj}"
 
-        adding_mesh_object(name,obj_to_load,texture_to_load,z_range=[1.5,2], randomize=True)
+        adding_mesh_object(name,obj_to_load,texture_to_load)
 
 
     google_content_folder = glob.glob(opt.objs_folder + "Artec/Artec")
